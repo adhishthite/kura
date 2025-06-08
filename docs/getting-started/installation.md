@@ -49,6 +49,16 @@ export OPENAI_API_KEY=your_api_key_here
 set OPENAI_API_KEY=your_api_key_here
 ```
 
+If you are using **Azure OpenAI**, set the following variables instead (or set
+`USE_AZURE_OPENAI=true`):
+
+```bash
+export AZURE_OPENAI_API_BASE=https://your-resource.openai.azure.com
+export AZURE_OPENAI_API_KEY=your_azure_key
+export AZURE_OPENAI_API_VERSION=2024-02-15-preview
+export AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment
+```
+
 ## Installing Optional Dependencies
 
 Kura supports additional features with optional dependencies:

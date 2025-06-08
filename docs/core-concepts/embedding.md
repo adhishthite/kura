@@ -17,7 +17,7 @@ Kura's embedding pipeline transforms text (such as conversation summaries) into 
 
 Kura uses an `EmbeddingModel` (see `kura/embedding.py`) that implements the `BaseEmbeddingModel` interface. Multiple backends are supported:
 
-- **OpenAIEmbeddingModel**: Uses OpenAI's API (e.g., `text-embedding-3-small`) for high-quality embeddings
+ - **OpenAIEmbeddingModel**: Uses OpenAI's API (e.g., `text-embedding-3-small`) for high-quality embeddings. Set `USE_AZURE_OPENAI=true` to route these calls through Azure.
 - **SentenceTransformerEmbeddingModel**: Uses local models from the `sentence-transformers` library (e.g., `all-MiniLM-L6-v2`)
 
 All embedding models must implement the following interface (see `kura/base_classes/embedding.py`):

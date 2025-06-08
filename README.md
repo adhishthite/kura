@@ -31,6 +31,10 @@ By clustering similar conversations and providing intuitive visualizations, Kura
 uv pip install kura
 ```
 
+Kura defaults to OpenAI's API but can also use **Azure OpenAI** by setting
+`USE_AZURE_OPENAI=true` and providing the Azure endpoint, key, version, and
+deployment name via environment variables.
+
 ## Quick Start
 
 ```python
