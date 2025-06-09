@@ -13,6 +13,7 @@ Key benefits over the class-based approach:
 """
 
 import logging
+import asyncio
 from typing import Optional, TypeVar, List
 import os
 from pydantic import BaseModel
@@ -113,6 +114,8 @@ async def summarise_conversations(
     *,
     model: BaseSummaryModel,
     checkpoint_manager: Optional[CheckpointManager] = None,
+    batch_size: int = 100,
+    sleep_seconds: float = 0.0,
 ) -> List[ConversationSummary]:
     """Generate summaries for a list of conversations.
 
@@ -127,6 +130,9 @@ async def summarise_conversations(
         conversations: List of conversations to summarize
         model: Model to use for summarization (OpenAI, vLLM, local, etc.)
         checkpoint_manager: Optional checkpoint manager for caching
+        batch_size: Number of conversations to process before saving a checkpoint
+        sleep_seconds: Seconds to pause after each batch to avoid rate limits
+            (default ``0.0`` for no delay)
 
     Returns:
         List of conversation summaries
@@ -137,7 +143,9 @@ async def summarise_conversations(
         >>> summaries = await summarise_conversations(
         ...     conversations=my_conversations,
         ...     model=openai_model,
-        ...     checkpoint_manager=checkpoint_mgr
+        ...     checkpoint_manager=checkpoint_mgr,
+        ...     batch_size=200,
+        ...     sleep_seconds=1.0,
         ... )
     """
     logger.info(
@@ -145,20 +153,50 @@ async def summarise_conversations(
     )
 
     # Try to load from checkpoint
+    cached: List[ConversationSummary] = []
+    processed_ids: set[str] = set()
     if checkpoint_manager:
-        cached = checkpoint_manager.load_checkpoint(
-            model.checkpoint_filename, ConversationSummary
+        cached = (
+            checkpoint_manager.load_checkpoint(
+                model.checkpoint_filename, ConversationSummary
+            )
+            or []
         )
-        if cached:
+        processed_ids = {summary.chat_id for summary in cached}
+        if len(cached) == len(conversations):
             logger.info(f"Loaded {len(cached)} summaries from checkpoint")
             return cached
 
-    # Generate summaries
-    logger.info("Generating new summaries...")
-    summaries = await model.summarise(conversations)
-    logger.info(f"Generated {len(summaries)} summaries")
+    remaining = [c for c in conversations if c.chat_id not in processed_ids]
+    all_summaries = list(cached)
 
-    # Save to checkpoint
+    if remaining:
+        logger.info(
+            f"Generating {len(remaining)} new summaries in batches of {batch_size}"
+        )
+    else:
+        logger.info("No new conversations to summarise")
+
+    # Generate summaries in batches and save progress
+    for start in range(0, len(remaining), batch_size):
+        batch = remaining[start : start + batch_size]
+        logger.info(
+            f"Processing batch {start // batch_size + 1}: {len(batch)} conversations"
+        )
+        batch_summaries = await model.summarise(batch)
+        all_summaries.extend(batch_summaries)
+        if checkpoint_manager:
+            checkpoint_manager.save_checkpoint(model.checkpoint_filename, all_summaries)
+            logger.info(
+                f"Checkpoint saved with {len(all_summaries)}/{len(conversations)} summaries"
+            )
+        if sleep_seconds > 0:
+            logger.info(f"Sleeping for {sleep_seconds} seconds to respect rate limits")
+            await asyncio.sleep(sleep_seconds)
+
+    summaries = all_summaries
+
+    # Save to checkpoint at the end (ensures fully written file)
     if checkpoint_manager:
         logger.info(f"Saving summaries to checkpoint: {model.checkpoint_filename}")
         checkpoint_manager.save_checkpoint(model.checkpoint_filename, summaries)
