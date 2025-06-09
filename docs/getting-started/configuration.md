@@ -60,7 +60,7 @@ async def analyze(conversations): # Added conversations as an argument
         conversations,
         model=summary_model,
         checkpoint_manager=checkpoint_manager,
-        batch_size=200
+        batch_size=200,
         sleep_seconds=1
         # log progress and checkpointing info during processing
     )
