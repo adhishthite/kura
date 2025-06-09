@@ -49,3 +49,10 @@ class ConversationSummary(GeneratedSummary):
 class ExtractedProperty(BaseModel):
     name: str
     value: Union[str, int, float, bool, list[str], list[int], list[float]]
+
+
+class SummarisationError(BaseModel):
+    """Represents a failure to summarise a conversation."""
+
+    chat_id: str
+    error: str

@@ -27,6 +27,7 @@ from kura.base_classes import (
 )
 from kura.types import Conversation, Cluster, ConversationSummary
 from kura.types.dimensionality import ProjectedCluster
+from kura.types.summarisation import SummarisationError
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -178,6 +179,8 @@ async def summarise_conversations(
         logger.info("No new conversations to summarise")
 
     # Generate summaries in batches and save progress
+    all_errors: List[SummarisationError] = []
+
     for start in range(0, len(remaining), batch_size):
         batch = remaining[start : start + batch_size]
         logger.info(
@@ -185,8 +188,15 @@ async def summarise_conversations(
         )
         batch_summaries = await model.summarise(batch)
         all_summaries.extend(batch_summaries)
+        if getattr(model, "errors", None):
+            all_errors.extend(model.errors)
+            model.errors = []
         if checkpoint_manager:
             checkpoint_manager.save_checkpoint(model.checkpoint_filename, all_summaries)
+            if all_errors:
+                checkpoint_manager.save_checkpoint(
+                    model.error_checkpoint_filename, all_errors
+                )
             logger.info(
                 f"Checkpoint saved with {len(all_summaries)}/{len(conversations)} summaries"
             )
@@ -200,6 +210,10 @@ async def summarise_conversations(
     if checkpoint_manager:
         logger.info(f"Saving summaries to checkpoint: {model.checkpoint_filename}")
         checkpoint_manager.save_checkpoint(model.checkpoint_filename, summaries)
+        if all_errors:
+            checkpoint_manager.save_checkpoint(
+                model.error_checkpoint_filename, all_errors
+            )
 
     return summaries
 
