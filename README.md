@@ -33,8 +33,9 @@ uv pip install kura
 
 Kura defaults to OpenAI's API but can also use **Azure OpenAI** by setting
 `USE_AZURE_OPENAI=true` and providing the Azure endpoint, key, version, and
-deployment name via environment variables. Environment variables are loaded
-automatically from a `.env` file if present.
+deployment names via environment variables (`AZURE_OPENAI_DEPLOYMENT_NAME` for
+LLMs and `AZURE_EMBEDDING_DEPLOYMENT_NAME` for embeddings). Environment
+variables are loaded automatically from a `.env` file if present.
 
 ## Quick Start
 

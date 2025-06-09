@@ -17,7 +17,10 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
     ):
         self.client = create_openai_client()
         if use_azure_openai():
-            self.model_name = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", model_name)
+            self.model_name = os.environ.get(
+                "AZURE_EMBEDDING_DEPLOYMENT_NAME",
+                os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", model_name),
+            )
         else:
             self.model_name = model_name
         self._model_batch_size = model_batch_size

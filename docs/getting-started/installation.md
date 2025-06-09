@@ -57,7 +57,11 @@ export AZURE_OPENAI_API_BASE=https://your-resource.openai.azure.com
 export AZURE_OPENAI_API_KEY=your_azure_key
 export AZURE_OPENAI_API_VERSION=2024-02-15-preview
 export AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment
+export AZURE_EMBEDDING_DEPLOYMENT_NAME=your-embedding-deployment
 ```
+
+Use `AZURE_OPENAI_DEPLOYMENT_NAME` for LLM requests and
+`AZURE_EMBEDDING_DEPLOYMENT_NAME` for embedding requests.
 
 You can store these variables in a `.env` file. Kura uses
 `python-dotenv` to automatically load them when available.
