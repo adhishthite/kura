@@ -18,6 +18,7 @@ Before you begin, make sure you have:
 2. Set up your API key (Kura uses OpenAI by default). To use Azure OpenAI,
    set `USE_AZURE_OPENAI=true` and provide the Azure variables shown in the
    installation guide.
+   These can also be placed in a `.env` file for convenience.
    ```bash
    export OPENAI_API_KEY=your_api_key_here
    ```

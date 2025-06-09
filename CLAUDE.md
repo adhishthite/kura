@@ -15,6 +15,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
+Environment variables can be stored in a `.env` file, which is loaded
+automatically when running the library.
+
 ### Running Tests
 
 ```bash

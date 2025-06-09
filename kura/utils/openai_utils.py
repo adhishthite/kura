@@ -1,6 +1,9 @@
 import os
 from openai import AsyncOpenAI, AsyncAzureOpenAI
 import instructor
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def _truthy(val: str | None) -> bool:

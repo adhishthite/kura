@@ -59,6 +59,9 @@ export AZURE_OPENAI_API_VERSION=2024-02-15-preview
 export AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment
 ```
 
+You can store these variables in a `.env` file. Kura uses
+`python-dotenv` to automatically load them when available.
+
 ## Installing Optional Dependencies
 
 Kura supports additional features with optional dependencies:
