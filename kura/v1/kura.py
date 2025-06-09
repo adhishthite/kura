@@ -113,6 +113,7 @@ async def summarise_conversations(
     *,
     model: BaseSummaryModel,
     checkpoint_manager: Optional[CheckpointManager] = None,
+    batch_size: int = 100,
 ) -> List[ConversationSummary]:
     """Generate summaries for a list of conversations.
 
@@ -127,6 +128,7 @@ async def summarise_conversations(
         conversations: List of conversations to summarize
         model: Model to use for summarization (OpenAI, vLLM, local, etc.)
         checkpoint_manager: Optional checkpoint manager for caching
+        batch_size: Number of conversations to process before saving a checkpoint
 
     Returns:
         List of conversation summaries
@@ -145,20 +147,41 @@ async def summarise_conversations(
     )
 
     # Try to load from checkpoint
+    cached: List[ConversationSummary] = []
+    processed_ids: set[str] = set()
     if checkpoint_manager:
-        cached = checkpoint_manager.load_checkpoint(
-            model.checkpoint_filename, ConversationSummary
+        cached = (
+            checkpoint_manager.load_checkpoint(
+                model.checkpoint_filename, ConversationSummary
+            )
+            or []
         )
-        if cached:
+        processed_ids = {summary.chat_id for summary in cached}
+        if len(cached) == len(conversations):
             logger.info(f"Loaded {len(cached)} summaries from checkpoint")
             return cached
 
-    # Generate summaries
-    logger.info("Generating new summaries...")
-    summaries = await model.summarise(conversations)
-    logger.info(f"Generated {len(summaries)} summaries")
+    remaining = [c for c in conversations if c.chat_id not in processed_ids]
+    all_summaries = list(cached)
 
-    # Save to checkpoint
+    if remaining:
+        logger.info(
+            f"Generating {len(remaining)} new summaries in batches of {batch_size}"
+        )
+    else:
+        logger.info("No new conversations to summarise")
+
+    # Generate summaries in batches and save progress
+    for start in range(0, len(remaining), batch_size):
+        batch = remaining[start : start + batch_size]
+        batch_summaries = await model.summarise(batch)
+        all_summaries.extend(batch_summaries)
+        if checkpoint_manager:
+            checkpoint_manager.save_checkpoint(model.checkpoint_filename, all_summaries)
+
+    summaries = all_summaries
+
+    # Save to checkpoint at the end (ensures fully written file)
     if checkpoint_manager:
         logger.info(f"Saving summaries to checkpoint: {model.checkpoint_filename}")
         checkpoint_manager.save_checkpoint(model.checkpoint_filename, summaries)

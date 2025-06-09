@@ -25,7 +25,11 @@ from kura import (
 )
 
 # Run each step independently
-summaries = await summarise_conversations(conversations, model=summary_model)
+summaries = await summarise_conversations(
+    conversations,
+    model=summary_model,
+    batch_size=200,
+)
 clusters = await generate_base_clusters_from_conversation_summaries(summaries, model=cluster_model)
 meta_clusters = await reduce_clusters_from_base_clusters(clusters, model=meta_cluster_model)
 projected = await reduce_dimensionality_from_clusters(meta_clusters, model=dim_reduction_model)

@@ -80,7 +80,8 @@ async def process_conversations():
     summaries = await summarise_conversations(
         conversations,
         model=summary_model,
-        checkpoint_manager=checkpoint_mgr
+        checkpoint_manager=checkpoint_mgr,
+        batch_size=200
     )
 
     # Step 2: Create base clusters
