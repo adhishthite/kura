@@ -29,6 +29,7 @@ summaries = await summarise_conversations(
     conversations,
     model=summary_model,
     batch_size=200,
+    # progress logs will show checkpoint status
 )
 clusters = await generate_base_clusters_from_conversation_summaries(summaries, model=cluster_model)
 meta_clusters = await reduce_clusters_from_base_clusters(clusters, model=meta_cluster_model)

@@ -174,10 +174,16 @@ async def summarise_conversations(
     # Generate summaries in batches and save progress
     for start in range(0, len(remaining), batch_size):
         batch = remaining[start : start + batch_size]
+        logger.info(
+            f"Processing batch {start // batch_size + 1}: {len(batch)} conversations"
+        )
         batch_summaries = await model.summarise(batch)
         all_summaries.extend(batch_summaries)
         if checkpoint_manager:
             checkpoint_manager.save_checkpoint(model.checkpoint_filename, all_summaries)
+            logger.info(
+                f"Checkpoint saved with {len(all_summaries)}/{len(conversations)} summaries"
+            )
 
     summaries = all_summaries
 

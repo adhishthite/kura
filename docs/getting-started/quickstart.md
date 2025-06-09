@@ -77,6 +77,7 @@ async def main():
         model=summary_model,
         checkpoint_manager=checkpoint_manager,
         batch_size=200
+        # log progress to console as each batch is processed
     )
 
     clusters = await generate_base_clusters_from_conversation_summaries(
