@@ -8,7 +8,7 @@ import logging
 
 from kura.base_classes import BaseSummaryModel
 from kura.types import Conversation, ConversationSummary, ExtractedProperty
-from kura.types.summarisation import GeneratedSummary
+from kura.types.summarisation import GeneratedSummary, SummarisationError
 
 # Rich imports handled by Kura base class
 from typing import TYPE_CHECKING
@@ -43,6 +43,7 @@ class SummaryModel(BaseSummaryModel):
         self.max_concurrent_requests = max_concurrent_requests
         self.model = model
         self.console = console
+        self.errors: list[SummarisationError] = []
         logger.info(
             f"Initialized SummaryModel with model={model}, max_concurrent_requests={max_concurrent_requests}, extractors={len(extractors)}"
         )
@@ -238,14 +239,25 @@ class SummaryModel(BaseSummaryModel):
             f"Starting summarization of {len(conversations)} conversations using model {self.model}"
         )
 
-        summaries = await self._gather_with_progress(
-            [
-                self.summarise_conversation(conversation)
-                for conversation in conversations
-            ],
+        self.errors = []
+
+        async def _wrapper(conv: Conversation):
+            try:
+                return await self.summarise_conversation(conv)
+            except Exception as e:  # pragma: no cover - error path
+                logger.error(f"Failed to summarise conversation {conv.chat_id}: {e}")
+                self.errors.append(
+                    SummarisationError(chat_id=conv.chat_id, error=str(e))
+                )
+                return None
+
+        results = await self._gather_with_progress(
+            [_wrapper(conversation) for conversation in conversations],
             desc=f"Summarising {len(conversations)} conversations",
             show_preview=True,
         )
+
+        summaries = [r for r in results if r is not None]
 
         logger.info(
             f"Completed summarization of {len(conversations)} conversations, produced {len(summaries)} summaries"

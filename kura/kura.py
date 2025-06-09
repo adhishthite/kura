@@ -149,6 +149,13 @@ class Kura:
         )
 
     @property
+    def summary_error_checkpoint_path(self) -> str:
+        """Path for storing summarisation errors."""
+        return os.path.join(
+            self.checkpoint_dir, self.summarisation_model.error_checkpoint_filename
+        )
+
+    @property
     def cluster_checkpoint_path(self) -> str:
         """Get the checkpoint path for clusters based on the cluster model."""
         return os.path.join(self.checkpoint_dir, self.cluster_model.checkpoint_filename)
@@ -277,6 +284,12 @@ class Kura:
 
         summaries = await self.summarisation_model.summarise(conversations)
         self.save_checkpoint(self.summary_checkpoint_path, summaries)
+
+        if self.summarisation_model.errors:
+            self.save_checkpoint(
+                self.summary_error_checkpoint_path, self.summarisation_model.errors
+            )
+
         return summaries
 
     async def generate_base_clusters(
