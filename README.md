@@ -86,7 +86,10 @@ async def main():
     clusters = await generate_base_clusters_from_conversation_summaries(
         summaries,
         model=cluster_model,
-        checkpoint_manager=checkpoint_manager
+        checkpoint_manager=checkpoint_manager,
+        batch_size=50,
+        sleep_seconds=1,
+        # progress logged as each batch of clusters is generated
     )
 
     reduced_clusters = await reduce_clusters_from_base_clusters(
@@ -108,6 +111,7 @@ async def main():
     print(f"Created {len(reduced_clusters)} meta clusters")
     print(f"Checkpoints saved to: {checkpoint_manager.checkpoint_dir}")
     print("Failed summaries are stored in summaries_errors.jsonl if any errors occurred")
+    print("Failed clusters are stored in clusters_errors.jsonl if any errors occurred")
     print("Running again will load these errors and skip those conversations")
 
 if __name__ == "__main__":

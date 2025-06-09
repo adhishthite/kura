@@ -1,7 +1,7 @@
 from kura.base_classes import BaseClusterModel, BaseClusteringMethod, BaseEmbeddingModel
 from kura.embedding import OpenAIEmbeddingModel
 from kura.k_means import KmeansClusteringMethod
-from kura.types import ConversationSummary, Cluster, GeneratedCluster
+from kura.types import ConversationSummary, Cluster, GeneratedCluster, ClusteringError
 from tqdm.asyncio import tqdm_asyncio
 import numpy as np
 from asyncio import Semaphore
@@ -23,6 +23,13 @@ class ClusterModel(BaseClusterModel):
         """The filename to use for checkpointing this model's output."""
         return "clusters.jsonl"
 
+    @property
+    def error_checkpoint_filename(self) -> str:
+        filename = self.checkpoint_filename
+        if filename.endswith(".jsonl"):
+            return filename.replace(".jsonl", "_errors.jsonl")
+        return f"{filename}_errors.jsonl"
+
     def __init__(
         self,
         clustering_method: BaseClusteringMethod = KmeansClusteringMethod(),
@@ -38,6 +45,7 @@ class ClusterModel(BaseClusterModel):
         self.sem = Semaphore(max_concurrent_requests)
         self.client = create_instructor_client(model)
         self.console = console
+        self.errors: list[ClusteringError] = []
         logger.info(
             f"Initialized ClusterModel with clustering_method={type(clustering_method).__name__}, embedding_model={type(embedding_model).__name__}, max_concurrent_requests={max_concurrent_requests}, model={model}"
         )
@@ -85,7 +93,7 @@ class ClusterModel(BaseClusterModel):
         self,
         summaries: list[ConversationSummary],
         contrastive_examples: list[ConversationSummary],
-    ) -> Cluster:
+    ) -> Cluster | None:
         logger.debug(
             f"Generating cluster from {len(summaries)} summaries with {len(contrastive_examples)} contrastive examples"
         )
@@ -164,7 +172,12 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
                 logger.error(
                     f"Failed to generate cluster from {len(summaries)} summaries: {e}"
                 )
-                raise
+                self.errors.append(
+                    ClusteringError(
+                        chat_ids=[s.chat_id for s in summaries], error=str(e)
+                    )
+                )
+                return None
 
     async def _embed_summaries(
         self, summaries: list[ConversationSummary]
@@ -196,7 +209,13 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
         return embeddings
 
     async def _generate_clusters_from_embeddings(
-        self, summaries: list[ConversationSummary], embeddings: list[list[float]]
+        self,
+        summaries: list[ConversationSummary],
+        embeddings: list[list[float]],
+        *,
+        processed_keys: set[tuple[str, ...]] | None = None,
+        batch_size: int = 100,
+        sleep_seconds: float = 0.0,
     ) -> list[Cluster]:
         """Generates clusters from summaries and their embeddings."""
         logger.info(
@@ -215,39 +234,57 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
             f"Clustering method produced {len(cluster_id_to_summaries)} clusters"
         )
 
-        # Create tasks for cluster generation with contrastive examples
-        tasks = []
+        tasks_data = []
         for cluster_id, conversation_summaries in cluster_id_to_summaries.items():
+            key = tuple(sorted(s.chat_id for s in conversation_summaries))
+            if processed_keys and key in processed_keys:
+                logger.info(
+                    f"Skipping previously processed cluster with {len(conversation_summaries)} summaries"
+                )
+                continue
+
             logger.debug(
                 f"Preparing cluster generation for cluster {cluster_id} with {len(conversation_summaries)} summaries"
             )
 
-            # Get contrastive examples from other clusters to help distinguish this cluster
             contrastive_examples = self.get_contrastive_examples(
                 cluster_id=cluster_id,
                 cluster_id_to_summaries=cluster_id_to_summaries,
                 limit=10,
             )
 
-            # Create cluster generation task for this specific cluster
-            task = self.generate_cluster(
-                summaries=conversation_summaries,
-                contrastive_examples=contrastive_examples,
-            )
-            tasks.append(task)
+            tasks_data.append((conversation_summaries, contrastive_examples))
 
-        logger.info(f"Starting concurrent generation of {len(tasks)} clusters")
-        # Execute all cluster generation tasks concurrently with progress tracking
-        clusters: list[Cluster] = await self._gather_with_progress(
-            tasks=tasks,
-            desc="Generating Base Clusters",
-            show_preview=True,
-        )
+        clusters: list[Cluster] = []
+        for start in range(0, len(tasks_data), batch_size):
+            batch = tasks_data[start : start + batch_size]
+            tasks = [
+                self.generate_cluster(summaries=s, contrastive_examples=c)
+                for s, c in batch
+            ]
+            logger.info(
+                f"Starting concurrent generation for batch {start // batch_size + 1} with {len(tasks)} clusters"
+            )
+            results = await self._gather_with_progress(
+                tasks=tasks,
+                desc="Generating Base Clusters",
+                show_preview=True,
+            )
+            clusters.extend([r for r in results if r is not None])
+            if sleep_seconds > 0 and start + batch_size < len(tasks_data):
+                logger.info(f"Sleeping for {sleep_seconds} seconds before next batch")
+                await asyncio.sleep(sleep_seconds)
+
         logger.info(f"Successfully generated {len(clusters)} clusters")
         return clusters
 
     async def cluster_summaries(
-        self, summaries: list[ConversationSummary]
+        self,
+        summaries: list[ConversationSummary],
+        *,
+        processed_keys: set[tuple[str, ...]] | None = None,
+        batch_size: int = 100,
+        sleep_seconds: float = 0.0,
     ) -> list[Cluster]:
         if not summaries:
             logger.warning("Empty summaries list provided to cluster_summaries")
@@ -257,6 +294,7 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
             f"Starting clustering process for {len(summaries)} conversation summaries"
         )
 
+        self.errors = []
         embeddings = await self._embed_summaries(summaries)
         if not embeddings:
             logger.error(
@@ -264,7 +302,13 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
             )
             return []
 
-        clusters = await self._generate_clusters_from_embeddings(summaries, embeddings)
+        clusters = await self._generate_clusters_from_embeddings(
+            summaries,
+            embeddings,
+            processed_keys=processed_keys,
+            batch_size=batch_size,
+            sleep_seconds=sleep_seconds,
+        )
         logger.info(
             f"Clustering process completed: generated {len(clusters)} clusters from {len(summaries)} summaries"
         )

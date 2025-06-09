@@ -25,7 +25,7 @@ from kura.base_classes import (
     BaseMetaClusterModel,
     BaseDimensionalityReduction,
 )
-from kura.types import Conversation, Cluster, ConversationSummary
+from kura.types import Conversation, Cluster, ConversationSummary, ClusteringError
 from kura.types.dimensionality import ProjectedCluster
 from kura.types.summarisation import SummarisationError
 
@@ -237,6 +237,8 @@ async def generate_base_clusters_from_conversation_summaries(
     *,
     model: BaseClusterModel,
     checkpoint_manager: Optional[CheckpointManager] = None,
+    batch_size: int = 100,
+    sleep_seconds: float = 0.0,
 ) -> List[Cluster]:
     """Generate base clusters from conversation summaries.
 
@@ -264,23 +266,52 @@ async def generate_base_clusters_from_conversation_summaries(
         f"Starting clustering of {len(summaries)} summaries using {type(model).__name__}"
     )
 
-    # Try to load from checkpoint
+    cached: List[Cluster] = []
+    cached_errors: List[ClusteringError] = []
+    processed_keys: set[tuple[str, ...]] = set()
     if checkpoint_manager:
-        cached = checkpoint_manager.load_checkpoint(model.checkpoint_filename, Cluster)
+        cached = (
+            checkpoint_manager.load_checkpoint(model.checkpoint_filename, Cluster) or []
+        )
+        cached_errors = (
+            checkpoint_manager.load_checkpoint(
+                model.error_checkpoint_filename, ClusteringError
+            )
+            or []
+        )
+        processed_keys = {tuple(sorted(c.chat_ids)) for c in cached} | {
+            tuple(sorted(e.chat_ids)) for e in cached_errors
+        }
         if cached:
             logger.info(f"Loaded {len(cached)} clusters from checkpoint")
-            return cached
+        if cached_errors:
+            logger.info(
+                f"Loaded {len(cached_errors)} clustering errors from checkpoint"
+            )
 
-    # Generate clusters
-    logger.info("Generating new clusters...")
-    clusters = await model.cluster_summaries(summaries)
-    logger.info(f"Generated {len(clusters)} clusters")
+    logger.info(
+        f"Generating clusters for {len(summaries)} summaries in batches of {batch_size}"
+    )
 
-    # Save to checkpoint
+    new_clusters = await model.cluster_summaries(
+        summaries,
+        processed_keys=processed_keys,
+        batch_size=batch_size,
+        sleep_seconds=sleep_seconds,
+    )
+
+    all_clusters = cached + new_clusters
+    all_errors = cached_errors + getattr(model, "errors", [])
+
     if checkpoint_manager:
-        checkpoint_manager.save_checkpoint(model.checkpoint_filename, clusters)
+        checkpoint_manager.save_checkpoint(model.checkpoint_filename, all_clusters)
+        if all_errors:
+            checkpoint_manager.save_checkpoint(
+                model.error_checkpoint_filename, all_errors
+            )
 
-    return clusters
+    logger.info(f"Generated {len(all_clusters)} total clusters")
+    return all_clusters
 
 
 async def reduce_clusters_from_base_clusters(
