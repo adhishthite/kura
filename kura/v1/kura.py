@@ -155,6 +155,7 @@ async def summarise_conversations(
 
     # Try to load from checkpoint
     cached: List[ConversationSummary] = []
+    cached_errors: List[SummarisationError] = []
     processed_ids: set[str] = set()
     if checkpoint_manager:
         cached = (
@@ -163,13 +164,27 @@ async def summarise_conversations(
             )
             or []
         )
-        processed_ids = {summary.chat_id for summary in cached}
-        if len(cached) == len(conversations):
+        cached_errors = (
+            checkpoint_manager.load_checkpoint(
+                model.error_checkpoint_filename, SummarisationError
+            )
+            or []
+        )
+        processed_ids = {summary.chat_id for summary in cached} | {
+            err.chat_id for err in cached_errors
+        }
+        if cached:
             logger.info(f"Loaded {len(cached)} summaries from checkpoint")
+        if cached_errors:
+            logger.info(
+                f"Loaded {len(cached_errors)} summarisation errors from checkpoint"
+            )
+        if len(processed_ids) == len(conversations):
             return cached
 
     remaining = [c for c in conversations if c.chat_id not in processed_ids]
     all_summaries = list(cached)
+    all_errors: List[SummarisationError] = list(cached_errors)
 
     if remaining:
         logger.info(
@@ -179,7 +194,6 @@ async def summarise_conversations(
         logger.info("No new conversations to summarise")
 
     # Generate summaries in batches and save progress
-    all_errors: List[SummarisationError] = []
 
     for start in range(0, len(remaining), batch_size):
         batch = remaining[start : start + batch_size]

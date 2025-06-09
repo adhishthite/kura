@@ -108,6 +108,7 @@ async def main():
     print(f"Created {len(reduced_clusters)} meta clusters")
     print(f"Checkpoints saved to: {checkpoint_manager.checkpoint_dir}")
     print("Failed summaries are stored in summaries_errors.jsonl if any errors occurred")
+    print("Running again will load these errors and skip those conversations")
 
 if __name__ == "__main__":
     asyncio.run(main())
