@@ -19,7 +19,7 @@ Kura's summarization pipeline is designed to extract concise, structured, and pr
 
 ## The Summarization Model
 
-Kura uses a `SummaryModel` (see `kura/summarisation.py`) that implements the `BaseSummaryModel` interface. The default model is based on large language models (LLMs) such as OpenAI's GPT-4o, but the interface supports other backends as well.
+Kura uses a `SummaryModel` (see `kura/summarisation.py`) that implements the `BaseSummaryModel` interface. The default model is based on large language models (LLMs) such as OpenAI's GPT-4o, but the interface supports other backends as well. Setting `USE_AZURE_OPENAI=true` routes OpenAI requests through Azure.
 
 ### Key Features
 

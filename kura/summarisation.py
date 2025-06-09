@@ -1,7 +1,7 @@
 from asyncio import Semaphore, gather
 from typing import Callable, Optional, Union
 
-import instructor
+from kura.utils.openai_utils import create_instructor_client
 from tqdm.asyncio import tqdm_asyncio
 import asyncio
 import logging
@@ -320,7 +320,7 @@ class SummaryModel(BaseSummaryModel):
             f"Starting summarization of conversation {conversation.chat_id} with {len(conversation.messages)} messages"
         )
 
-        client = instructor.from_provider(self.model, async_client=True)
+        client = create_instructor_client(self.model)
         async with self.semaphore:  # type: ignore
             try:
                 resp = await client.chat.completions.create(  # type: ignore

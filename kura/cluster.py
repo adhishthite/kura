@@ -5,7 +5,7 @@ from kura.types import ConversationSummary, Cluster, GeneratedCluster
 from tqdm.asyncio import tqdm_asyncio
 import numpy as np
 from asyncio import Semaphore
-import instructor
+from kura.utils.openai_utils import create_instructor_client
 import asyncio
 import logging
 
@@ -36,7 +36,7 @@ class ClusterModel(BaseClusterModel):
         self.embedding_model = embedding_model
         self.max_concurrent_requests = max_concurrent_requests
         self.sem = Semaphore(max_concurrent_requests)
-        self.client = instructor.from_provider(model, async_client=True)
+        self.client = create_instructor_client(model)
         self.console = console
         logger.info(
             f"Initialized ClusterModel with clustering_method={type(clustering_method).__name__}, embedding_model={type(embedding_model).__name__}, max_concurrent_requests={max_concurrent_requests}, model={model}"

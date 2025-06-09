@@ -8,7 +8,7 @@ from kura.base_classes import (
 import math
 from kura.types.cluster import Cluster, GeneratedCluster
 from kura.embedding import OpenAIEmbeddingModel
-import instructor
+from kura.utils.openai_utils import create_instructor_client
 from asyncio import Semaphore
 from pydantic import BaseModel, field_validator, ValidationInfo
 import re
@@ -92,7 +92,7 @@ class MetaClusterModel(BaseMetaClusterModel):
 
         self.max_concurrent_requests = max_concurrent_requests
         self.sem = Semaphore(max_concurrent_requests)
-        self.client = instructor.from_provider(model, async_client=True)
+        self.client = create_instructor_client(model)
         self.console = console
         self.max_clusters = max_clusters
 

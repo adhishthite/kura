@@ -1,7 +1,8 @@
 from kura.base_classes import BaseEmbeddingModel
 from asyncio import Semaphore, gather
 from tenacity import retry, wait_fixed, stop_after_attempt
-from openai import AsyncOpenAI
+from kura.utils.openai_utils import create_openai_client, use_azure_openai
+import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,8 +15,14 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         model_batch_size: int = 50,
         n_concurrent_jobs: int = 5,
     ):
-        self.client = AsyncOpenAI()
-        self.model_name = model_name
+        self.client = create_openai_client()
+        if use_azure_openai():
+            self.model_name = os.environ.get(
+                "AZURE_EMBEDDING_DEPLOYMENT_NAME",
+                os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", model_name),
+            )
+        else:
+            self.model_name = model_name
         self._model_batch_size = model_batch_size
         self._n_concurrent_jobs = n_concurrent_jobs
         self._semaphore = Semaphore(n_concurrent_jobs)
