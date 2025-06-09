@@ -82,6 +82,7 @@ async def process_conversations():
         model=summary_model,
         checkpoint_manager=checkpoint_mgr,
         batch_size=200
+        sleep_seconds=1
         # progress messages printed each batch
     )
 

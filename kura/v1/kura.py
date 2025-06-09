@@ -13,6 +13,7 @@ Key benefits over the class-based approach:
 """
 
 import logging
+import asyncio
 from typing import Optional, TypeVar, List
 import os
 from pydantic import BaseModel
@@ -114,6 +115,7 @@ async def summarise_conversations(
     model: BaseSummaryModel,
     checkpoint_manager: Optional[CheckpointManager] = None,
     batch_size: int = 100,
+    sleep_seconds: float = 0.0,
 ) -> List[ConversationSummary]:
     """Generate summaries for a list of conversations.
 
@@ -129,6 +131,8 @@ async def summarise_conversations(
         model: Model to use for summarization (OpenAI, vLLM, local, etc.)
         checkpoint_manager: Optional checkpoint manager for caching
         batch_size: Number of conversations to process before saving a checkpoint
+        sleep_seconds: Seconds to pause after each batch to avoid rate limits
+            (default ``0.0`` for no delay)
 
     Returns:
         List of conversation summaries
@@ -139,7 +143,9 @@ async def summarise_conversations(
         >>> summaries = await summarise_conversations(
         ...     conversations=my_conversations,
         ...     model=openai_model,
-        ...     checkpoint_manager=checkpoint_mgr
+        ...     checkpoint_manager=checkpoint_mgr,
+        ...     batch_size=200,
+        ...     sleep_seconds=1.0,
         ... )
     """
     logger.info(
@@ -184,6 +190,9 @@ async def summarise_conversations(
             logger.info(
                 f"Checkpoint saved with {len(all_summaries)}/{len(conversations)} summaries"
             )
+        if sleep_seconds > 0:
+            logger.info(f"Sleeping for {sleep_seconds} seconds to respect rate limits")
+            await asyncio.sleep(sleep_seconds)
 
     summaries = all_summaries
 

@@ -78,7 +78,8 @@ async def main():
         conversations,
         model=summary_model,
         checkpoint_manager=checkpoint_manager,
-        batch_size=200  # save progress every 200 conversations
+        batch_size=200,  # save progress every 200 conversations
+        sleep_seconds=1,  # pause between batches to respect rate limits
         # progress and checkpointing info will be logged to the console
     )
 
