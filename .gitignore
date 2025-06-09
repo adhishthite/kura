@@ -49,3 +49,6 @@ examples/
 tutorial_checkpoints/
 tutorial_checkpoints_class/
 site/
+
+checkpoints/
+checkpoint/
