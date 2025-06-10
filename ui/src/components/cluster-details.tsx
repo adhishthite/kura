@@ -1,14 +1,19 @@
-import { ClusterTreeNode, ConversationInfo } from "../types/cluster";
+"use client";
+
+import type { ClusterTreeNode, ConversationInfo } from "../types/cluster";
 import { useState } from "react";
 import ConversationDialog from "./conversation-dialog";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 
 interface ClusterDetailsProps {
   selectedCluster: ClusterTreeNode | null;
   conversationMetadataMap: Map<string, ConversationInfo>;
+  showConversations?: boolean;
 }
 
 interface MetadataSummaryProps {
-  aggregatedMetadata: Record<string, any[]>;
+  aggregatedMetadata: Record<string, unknown[]>;
 }
 
 function MetadataSummary({ aggregatedMetadata }: MetadataSummaryProps) {
@@ -19,41 +24,37 @@ function MetadataSummary({ aggregatedMetadata }: MetadataSummaryProps) {
   if (Object.keys(aggregatedMetadata).length === 0) return null;
 
   return (
-    <div className="mt-3 border-t pt-2">
+    <div className="space-y-3 border-t border-accent/20 pt-4 mt-4 bg-accent/5 rounded-lg p-4">
       <div className="flex justify-between items-center mb-2">
         <h4 className="text-xs font-semibold">Metadata Summary</h4>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-600">Aggregation:</span>
-          <button
+          <span className="text-xs text-muted-foreground">Aggregation:</span>
+          <Button
+            variant={aggregationMode === "individual" ? "default" : "outline"}
+            size="sm"
             onClick={() => setAggregationMode("individual")}
-            className={`text-xs px-2 py-0.5 rounded ${
-              aggregationMode === "individual"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-slate-100 text-slate-600"
-            }`}
+            className="h-6 px-2 text-xs"
           >
             Individual
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={aggregationMode === "list" ? "default" : "outline"}
+            size="sm"
             onClick={() => setAggregationMode("list")}
-            className={`text-xs px-2 py-0.5 rounded ${
-              aggregationMode === "list"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-slate-100 text-slate-600"
-            }`}
+            className="h-6 px-2 text-xs"
           >
             List
-          </button>
+          </Button>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2">
         {Object.entries(aggregatedMetadata).map(([key, values]) => {
           // Count occurrences based on aggregation mode
           const valueCounts = values.reduce(
-            (acc: Record<string, number>, val: any) => {
+            (acc: Record<string, number>, val: unknown) => {
               if (Array.isArray(val) && aggregationMode === "individual") {
                 // For individual mode, count each item in the array separately
-                val.forEach((item: any) => {
+                val.forEach((item: unknown) => {
                   const itemStr = String(item);
                   acc[itemStr] = (acc[itemStr] || 0) + 1;
                 });
@@ -74,13 +75,16 @@ function MetadataSummary({ aggregatedMetadata }: MetadataSummaryProps) {
               <span className="font-medium">{key}:</span>{" "}
               <div className="flex flex-wrap gap-1 mt-1">
                 {Object.entries(valueCounts).map(([value, count]) => (
-                  <div
+                  <Badge
                     key={`${key}-${value}`}
-                    className="inline-flex items-center border rounded-full px-2 py-0.5 bg-slate-100 text-slate-800 text-[10px]"
+                    variant="secondary"
+                    className="text-[10px] h-5 px-2 bg-chart-4/10 text-chart-4 border-chart-4/20 hover:bg-chart-4/20"
                   >
                     {value}
-                    <span className="ml-1 text-slate-500">({count})</span>
-                  </div>
+                    <span className="ml-1 text-muted-foreground">
+                      ({count})
+                    </span>
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -94,6 +98,7 @@ function MetadataSummary({ aggregatedMetadata }: MetadataSummaryProps) {
 export default function ClusterDetails({
   selectedCluster,
   conversationMetadataMap,
+  showConversations = false,
 }: ClusterDetailsProps) {
   const [selectedConversation, setSelectedConversation] =
     useState<ConversationInfo | null>(null);
@@ -101,14 +106,15 @@ export default function ClusterDetails({
 
   if (!selectedCluster) return null;
 
-  // Count chats that exist in the metadata map
   // Get the actual conversation objects from the metadata map
-  const chats = selectedCluster.chat_ids?.map((id: string) => {
-    return conversationMetadataMap.get(id);
-  });
+  const chats = selectedCluster.chat_ids
+    ?.map((id: string) => {
+      return conversationMetadataMap.get(id);
+    })
+    .filter(Boolean) as ConversationInfo[];
 
   const aggregatedMetadata = chats.reduce(
-    (acc: Record<string, any[]>, chat: ConversationInfo | undefined) => {
+    (acc: Record<string, unknown[]>, chat: ConversationInfo) => {
       if (!chat || !chat.metadata) return acc;
 
       // Iterate through each metadata key-value pair
@@ -137,57 +143,86 @@ export default function ClusterDetails({
     setIsDialogOpen(true);
   };
 
-  return (
-    <div className="flex-1 p-4 overflow-y-auto h-[50vh]">
-      <h3 className="text-sm font-semibold mb-2">Cluster Details</h3>
-      <div className="rounded-md">
-        <p className="font-medium">{selectedCluster.name}</p>
-        {selectedCluster.description && (
-          <p className="text-xs text-slate-600 mt-1">
-            {selectedCluster.description}
-          </p>
-        )}
-        <div className="flex space-x-4 mt-2">
-          <p className="text-xs text-slate-600">
-            <span className="font-medium">Level:</span> {selectedCluster.level}
-          </p>
+  // If showing conversations only, render just the conversations list
+  if (showConversations) {
+    return (
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="text-sm text-muted-foreground mb-3 flex-shrink-0">
+          {chats.length} conversations in this cluster
         </div>
-        {selectedCluster.id && (
-          <p className="text-xs text-slate-500 mt-1">
-            ID: {selectedCluster.id}
-          </p>
-        )}
-        <p className="text-xs text-slate-500 mt-1">
-          {selectedCluster.chat_ids?.length} chats
-        </p>
-
-        {/* Metadata summary section */}
-        <MetadataSummary aggregatedMetadata={aggregatedMetadata} />
-
-        <div className="mt-3 space-y-2 ">
+        <div className="flex-1 overflow-y-auto space-y-2 pr-2">
           {chats.map((item: ConversationInfo) => (
             <div
               key={item.chat_id}
-              className="p-2 border rounded-md cursor-pointer hover:bg-slate-50 transition-colors"
+              className="p-4 border border-accent/10 rounded-lg cursor-pointer hover:bg-accent/5 hover:border-accent/20 transition-all duration-200 hover:shadow-sm bg-gradient-to-r from-card to-transparent"
               onClick={() => handleConversationClick(item)}
             >
-              <p className="text-xs mb-3 text-slate-500 mt-1">
-                ID: {item.chat_id}
+              <p className="text-xs text-muted-foreground mb-2 font-mono opacity-60">
+                {item.chat_id}
               </p>
-              <p className="text-xs font-medium text-wrap">{item.summary}</p>
+              <p className="text-sm leading-relaxed text-foreground line-clamp-3">
+                {item.summary}
+              </p>
             </div>
           ))}
         </div>
+
+        {/* Conversation Dialog */}
+        {selectedConversation && (
+          <ConversationDialog
+            conversation={selectedConversation}
+            isOpen={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Otherwise, render cluster details only
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Fixed header section */}
+      <div className="flex-shrink-0 space-y-3">
+        <div className="p-4 bg-gradient-to-r from-accent/5 to-transparent rounded-lg border border-accent/10">
+          <h3 className="font-semibold text-lg leading-tight text-foreground">
+            {selectedCluster.name}
+          </h3>
+          {selectedCluster.description && (
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              {selectedCluster.description}
+            </p>
+          )}
+          <div className="flex items-center gap-6 text-xs mt-3">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-chart-2"></div>
+              <span className="font-medium text-foreground">Level:</span>
+              <span className="text-muted-foreground">
+                {selectedCluster.level}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-chart-3"></div>
+              <span className="font-medium text-foreground">
+                Conversations:
+              </span>
+              <span className="text-muted-foreground">
+                {selectedCluster.chat_ids?.length}
+              </span>
+            </div>
+          </div>
+          {selectedCluster.id && (
+            <p className="text-xs text-muted-foreground font-mono opacity-60 mt-2">
+              {selectedCluster.id}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Conversation Dialog */}
-      {selectedConversation && (
-        <ConversationDialog
-          conversation={selectedConversation}
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-        />
-      )}
+      {/* Scrollable metadata section */}
+      <div className="flex-1 min-h-0 overflow-y-auto pr-2">
+        <MetadataSummary aggregatedMetadata={aggregatedMetadata} />
+      </div>
     </div>
   );
 }
