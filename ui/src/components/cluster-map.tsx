@@ -43,53 +43,66 @@ const ClusterMap = ({ clusters }: ClusterMapProps) => {
   }, [nodeCoordinates]);
 
   return (
-    <ResponsiveContainer>
-      <ScatterChart
-        margin={{
-          top: 20,
-          right: 20,
-          bottom: 20,
-          left: 20,
-        }}
-        width={1000}
-        height={1000}
-      >
-        <Tooltip
-          cursor={{ strokeDasharray: "3 3" }}
-          content={({ payload }) => {
-            if (payload && payload[0]) {
-              return (
-                <div className="bg-white p-2 border rounded shadow">
-                  {payload[0].payload.label}
-                </div>
-              );
-            }
-            return null;
+    <div className="w-full h-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <ScatterChart
+          margin={{
+            top: 10,
+            right: 10,
+            bottom: 20,
+            left: 20,
           }}
-        />
-        <XAxis
-          type="number"
-          dataKey="x"
-          domain={[minX - xRange * 0.05, maxX + xRange * 0.05]}
-          name="X"
-          tickFormatter={(value) => value.toFixed(2)}
-        />
-        <YAxis
-          type="number"
-          dataKey="y"
-          domain={[minY - yRange * 0.05, maxY + yRange * 0.05]}
-          name="Y"
-          tickFormatter={(value) => value.toFixed(2)}
-        />
-        <ZAxis range={[50, 200]} />
-        <Scatter
-          name="Clusters"
-          data={nodeCoordinates}
-          fill="#8884d8"
-          cursor="pointer"
-        />
-      </ScatterChart>
-    </ResponsiveContainer>
+        >
+          <Tooltip
+            cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--accent))" }}
+            content={({ payload }) => {
+              if (payload && payload[0]) {
+                return (
+                  <div className="bg-card/95 backdrop-blur-sm p-3 border border-accent/20 rounded-lg shadow-lg text-xs max-w-56">
+                    <div className="font-medium truncate text-foreground">
+                      {payload[0].payload.label}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+          <XAxis
+            type="number"
+            dataKey="x"
+            domain={[minX - xRange * 0.05, maxX + xRange * 0.05]}
+            name="X"
+            tickFormatter={(value) => value.toFixed(1)}
+            fontSize={10}
+            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={{ stroke: 'hsl(var(--border))' }}
+            tickLine={{ stroke: 'hsl(var(--border))' }}
+          />
+          <YAxis
+            type="number"
+            dataKey="y"
+            domain={[minY - yRange * 0.05, maxY + yRange * 0.05]}
+            name="Y"
+            tickFormatter={(value) => value.toFixed(1)}
+            fontSize={10}
+            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={{ stroke: 'hsl(var(--border))' }}
+            tickLine={{ stroke: 'hsl(var(--border))' }}
+          />
+          <ZAxis range={[30, 100]} />
+          <Scatter
+            name="Clusters"
+            data={nodeCoordinates}
+            fill="hsl(var(--chart-1))"
+            stroke="hsl(var(--chart-1))"
+            strokeWidth={2}
+            cursor="pointer"
+            opacity={0.8}
+          />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
   );
 };
 

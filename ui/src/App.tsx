@@ -14,9 +14,10 @@ import {
 import { buildClusterTree, flattenClusterTree } from "./lib/tree";
 import ClusterTree from "./components/cluster-tree";
 import ClusterDetails from "./components/cluster-details";
-import { Button } from "./components/ui/button";
-import { X } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
+import { Upload } from "lucide-react";
 import ClusterMap from "./components/cluster-map";
+import Header from "./components/header";
 
 function App() {
   const [conversations, setConversations] = useState<ConversationsList | null>(
@@ -82,62 +83,118 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
+      <Header onReset={clusterTree ? resetVisualisations : undefined} />
+
       {!clusterTree && (
-        <div className="p-4 ">
-          <UploadForm
-            setConversations={setConversations}
-            conversations={conversations}
-            setSummaries={setSummaries}
-            summaries={summaries}
-            setClusters={setClusters}
-            clusters={clusters}
-            handleVisualiseClusters={handleVisualiseClusters}
-          />
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="w-full max-w-2xl">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary to-chart-1 flex items-center justify-center shadow-lg">
+                <Upload className="h-8 w-8 text-primary-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Start Your Analysis</h2>
+              <p className="text-muted-foreground">
+                Upload your conversation data files to begin clustering and
+                visualization
+              </p>
+            </div>
+            <UploadForm
+              setConversations={setConversations}
+              conversations={conversations}
+              setSummaries={setSummaries}
+              summaries={summaries}
+              setClusters={setClusters}
+              clusters={clusters}
+              handleVisualiseClusters={handleVisualiseClusters}
+            />
+          </div>
         </div>
       )}
 
       {clusterTree && (
-        <div className="flex flex-1 h-screen">
-          <div className="w-1/3 min-w-[300px] border-r flex flex-col">
-            <div className="p-4 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-bold">Cluster Hierarchy</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={resetVisualisations}
-                  className="text-slate-500 hover:text-slate-700"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  Reset
-                </Button>
-              </div>
-            </div>
-            <div className="p-4 overflow-y-auto h-[40vh] border-b">
-              <ClusterTree
-                clusterTree={clusterTree}
-                onSelectCluster={setSelectedCluster}
-              />
-            </div>
-
-            {selectedCluster && (
-              <div className="flex-1 overflow-y-auto">
-                <ClusterDetails
-                  selectedCluster={selectedCluster}
-                  conversationMetadataMap={conversationMetadataMap}
-                />
-              </div>
-            )}
-          </div>
-          <div className="flex-1 flex items-center justify-center text-slate-700 font-bold">
-            {selectedCluster && clusters && (
-              <ClusterMap
-                clusters={flatClusterNodes.filter(
-                  (item) => item.level == selectedCluster.level
+        <div className="flex-1 p-6 overflow-hidden flex flex-col">
+          {/* 50/50 Split Layout - Top row 50%, Bottom row 50%, each with internal scrolling */}
+          <div
+            className="grid grid-cols-2 gap-6 flex-1"
+            style={{ gridTemplateRows: "1fr 1fr" }}
+          >
+            {/* Top Left - Cluster Hierarchy */}
+            <Card className="flex flex-col shadow-sm border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm h-full">
+              <CardHeader className="pb-4 bg-gradient-to-r from-accent/5 to-transparent border-b flex-shrink-0">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-chart-1 animate-pulse"></div>
+                    Cluster Hierarchy
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 pt-4 min-h-0 flex flex-col">
+                {clusterTree ? (
+                  <>
+                    <div className="text-xs text-muted-foreground mb-2 flex-shrink-0">
+                      Tree loaded: {clusterTree.children?.length || 0} top-level
+                      clusters
+                    </div>
+                    <div className="flex-1 min-h-0">
+                      <ClusterTree
+                        clusterTree={clusterTree}
+                        onSelectCluster={setSelectedCluster}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-muted-foreground text-center py-8">
+                    No cluster tree loaded yet
+                  </div>
                 )}
-              />
-            )}
+              </CardContent>
+            </Card>
+
+            {/* Top Right - Cluster Visualization */}
+            <Card className="flex flex-col shadow-sm border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm h-full">
+              <CardHeader className="pb-4 bg-gradient-to-r from-accent/5 to-transparent border-b flex-shrink-0">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-chart-2 animate-pulse"></div>
+                  Cluster Visualization
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-auto p-4 min-h-0">
+                {selectedCluster && clusters ? (
+                  <ClusterMap
+                    clusters={flatClusterNodes.filter(
+                      (item) => item.level == selectedCluster.level
+                    )}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Select a cluster to view the map
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Bottom - Cluster Details (spans both columns) */}
+            <Card className="flex flex-col col-span-2 shadow-sm border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm h-full">
+              <CardHeader className="pb-4 bg-gradient-to-r from-accent/5 to-transparent border-b flex-shrink-0">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-chart-3 animate-pulse"></div>
+                  {selectedCluster ? "Cluster Details" : "Select a Cluster"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-y-auto pt-4 min-h-0">
+                {selectedCluster ? (
+                  <ClusterDetails
+                    selectedCluster={selectedCluster}
+                    conversationMetadataMap={conversationMetadataMap}
+                  />
+                ) : (
+                  <div className="text-muted-foreground text-center py-8">
+                    Select a cluster from the hierarchy to view details
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}
