@@ -3,6 +3,7 @@ import logging
 import pytest
 from kura.cluster import ClusterModel
 
+
 @pytest.mark.asyncio
 async def test_progress_logs_when_no_console(caplog):
     model = ClusterModel(console=None)

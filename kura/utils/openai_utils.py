@@ -40,7 +40,9 @@ def create_instructor_client(model: str, *, is_embedding: bool = False):
             return instructor.from_provider(model, async_client=True)
         client = create_openai_client()
         deployment_env = (
-            "AZURE_EMBEDDING_DEPLOYMENT_NAME" if is_embedding else "AZURE_OPENAI_DEPLOYMENT_NAME"
+            "AZURE_EMBEDDING_DEPLOYMENT_NAME"
+            if is_embedding
+            else "AZURE_OPENAI_DEPLOYMENT_NAME"
         )
         deployment = os.environ.get(deployment_env, model_name)
         return instructor.from_openai(client, model=deployment)

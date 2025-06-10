@@ -28,7 +28,9 @@ class BaseClusterModel(ABC):
         processed_keys: set[tuple[str, ...]] | None = None,
         batch_size: int = 100,
         sleep_seconds: float = 0.0,
-        on_batch_complete: Optional[Callable[[list[Cluster], list[ClusteringError]], None]] = None,
+        on_batch_complete: Optional[
+            Callable[[list[Cluster], list[ClusteringError]], None]
+        ] = None,
     ) -> list[Cluster]:
         pass
 

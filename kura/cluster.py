@@ -216,7 +216,9 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
         processed_keys: set[tuple[str, ...]] | None = None,
         batch_size: int = 100,
         sleep_seconds: float = 0.0,
-        on_batch_complete: Optional[Callable[[list[Cluster], list[ClusteringError]], None]] = None,
+        on_batch_complete: Optional[
+            Callable[[list[Cluster], list[ClusteringError]], None]
+        ] = None,
     ) -> list[Cluster]:
         """Generates clusters from summaries and their embeddings."""
         logger.info(
@@ -281,9 +283,7 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
             if on_batch_complete:
                 on_batch_complete(batch_clusters, new_errors)
             completed_tasks += len(batch)
-            logger.info(
-                f"Generated {completed_tasks}/{total_tasks} clusters"
-            )
+            logger.info(f"Generated {completed_tasks}/{total_tasks} clusters")
             if sleep_seconds > 0 and start + batch_size < len(tasks_data):
                 logger.info(f"Sleeping for {sleep_seconds} seconds before next batch")
                 await asyncio.sleep(sleep_seconds)
@@ -298,7 +298,9 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
         processed_keys: set[tuple[str, ...]] | None = None,
         batch_size: int = 100,
         sleep_seconds: float = 0.0,
-        on_batch_complete: Optional[Callable[[list[Cluster], list[ClusteringError]], None]] = None,
+        on_batch_complete: Optional[
+            Callable[[list[Cluster], list[ClusteringError]], None]
+        ] = None,
     ) -> list[Cluster]:
         if not summaries:
             logger.warning("Empty summaries list provided to cluster_summaries")

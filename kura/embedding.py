@@ -83,11 +83,13 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
                 logger.error(f"Failed to embed texts: {e}")
                 raise
             processed_texts += sum(len(b) for b in batch_group)
-            logger.info(
-                f"Embedded {processed_texts}/{total_texts} texts"
-            )
-            if self._sleep_seconds > 0 and start + self._n_concurrent_jobs < len(batches):
-                logger.info(f"Sleeping for {self._sleep_seconds} seconds between embedding batches")
+            logger.info(f"Embedded {processed_texts}/{total_texts} texts")
+            if self._sleep_seconds > 0 and start + self._n_concurrent_jobs < len(
+                batches
+            ):
+                logger.info(
+                    f"Sleeping for {self._sleep_seconds} seconds between embedding batches"
+                )
                 await asyncio.sleep(self._sleep_seconds)
 
         # Flatten results

@@ -306,9 +306,7 @@ async def generate_base_clusters_from_conversation_summaries(
                 checkpoint_manager.save_checkpoint(
                     model.error_checkpoint_filename, all_errors
                 )
-            logger.info(
-                f"Checkpoint saved with {len(all_clusters)} clusters"
-            )
+            logger.info(f"Checkpoint saved with {len(all_clusters)} clusters")
 
     new_clusters = await model.cluster_summaries(
         summaries,
