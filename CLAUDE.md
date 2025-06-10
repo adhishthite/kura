@@ -7,12 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Python Environment Setup
 
 ```bash
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Create and activate a virtual environment using uv
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Or use uv sync to install dependencies from uv.lock
+uv sync
 
 # Install package in development mode with dev dependencies
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 ```
 
 Environment variables can be stored in a `.env` file, which is loaded
@@ -42,7 +45,7 @@ pyright
 
 ```bash
 # Install documentation dependencies
-pip install -e ".[docs]"
+uv pip install -e ".[docs]"
 
 # Serve documentation locally
 mkdocs serve
