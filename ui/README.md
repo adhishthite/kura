@@ -52,3 +52,6 @@ export default tseslint.config({
   },
 })
 ```
+
+## Layout
+The main interface splits the screen into two halves: cluster hierarchy and map on the top, and cluster details below. Each section is scrollable while the page itself remains fixed.
