@@ -92,7 +92,7 @@ async def process_conversations():
         model=cluster_model,
         checkpoint_manager=checkpoint_mgr,
         batch_size=50,
-        sleep_seconds=1
+        sleep_seconds=1,
         # embedding and clustering progress logged after each batch
         # periodic updates printed when no console is available
     )
