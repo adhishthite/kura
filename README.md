@@ -93,7 +93,7 @@ async def main():
         checkpoint_manager=checkpoint_manager,
         batch_size=50,
         sleep_seconds=1,
-        # checkpoints and progress logged after each batch
+        # embedding and clustering progress logged after each batch
     )
 
     reduced_clusters = await reduce_clusters_from_base_clusters(

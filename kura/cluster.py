@@ -258,6 +258,8 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
 
         clusters: list[Cluster] = []
         error_index = 0
+        total_tasks = len(tasks_data)
+        completed_tasks = 0
         for start in range(0, len(tasks_data), batch_size):
             batch = tasks_data[start : start + batch_size]
             tasks = [
@@ -278,6 +280,10 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
             error_index = len(self.errors)
             if on_batch_complete:
                 on_batch_complete(batch_clusters, new_errors)
+            completed_tasks += len(batch)
+            logger.info(
+                f"Generated {completed_tasks}/{total_tasks} clusters"
+            )
             if sleep_seconds > 0 and start + batch_size < len(tasks_data):
                 logger.info(f"Sleeping for {sleep_seconds} seconds before next batch")
                 await asyncio.sleep(sleep_seconds)
