@@ -34,7 +34,7 @@ Kura's main clustering logic is implemented in the `ClusterModel` class (see `ku
 ```python
 model = ClusterModel(
     clustering_method=KmeansClusteringMethod(),
-    embedding_model=OpenAIEmbeddingModel(),
+    embedding_model=OpenAIEmbeddingModel(sleep_seconds=1),
     max_concurrent_requests=50,
     model="openai/gpt-4o-mini",
 )

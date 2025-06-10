@@ -1,5 +1,6 @@
 from kura.base_classes import BaseEmbeddingModel
 from asyncio import Semaphore, gather
+import asyncio
 from tenacity import retry, wait_fixed, stop_after_attempt
 from kura.utils.openai_utils import create_openai_client, use_azure_openai
 import os
@@ -14,6 +15,8 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         model_name: str = "text-embedding-3-small",
         model_batch_size: int = 50,
         n_concurrent_jobs: int = 5,
+        *,
+        sleep_seconds: float = 0.0,
     ):
         self.client = create_openai_client()
         if use_azure_openai():
@@ -26,8 +29,9 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
         self._model_batch_size = model_batch_size
         self._n_concurrent_jobs = n_concurrent_jobs
         self._semaphore = Semaphore(n_concurrent_jobs)
+        self._sleep_seconds = sleep_seconds
         logger.info(
-            f"Initialized OpenAIEmbeddingModel with model={model_name}, batch_size={model_batch_size}, concurrent_jobs={n_concurrent_jobs}"
+            f"Initialized OpenAIEmbeddingModel with model={model_name}, batch_size={model_batch_size}, concurrent_jobs={n_concurrent_jobs}, sleep_seconds={sleep_seconds}"
         )
 
     def slug(self):
@@ -66,14 +70,19 @@ class OpenAIEmbeddingModel(BaseEmbeddingModel):
             f"Split {len(texts)} texts into {len(batches)} batches of size {self._model_batch_size}"
         )
 
-        # Process all batches concurrently
-        tasks = [self._embed_batch(batch) for batch in batches]
-        try:
-            results_list_of_lists = await gather(*tasks)
-            logger.debug(f"Completed embedding {len(batches)} batches")
-        except Exception as e:
-            logger.error(f"Failed to embed texts: {e}")
-            raise
+        results_list_of_lists = []
+        for start in range(0, len(batches), self._n_concurrent_jobs):
+            batch_group = batches[start : start + self._n_concurrent_jobs]
+            tasks = [self._embed_batch(b) for b in batch_group]
+            try:
+                batch_results = await gather(*tasks)
+                results_list_of_lists.extend(batch_results)
+            except Exception as e:
+                logger.error(f"Failed to embed texts: {e}")
+                raise
+            if self._sleep_seconds > 0 and start + self._n_concurrent_jobs < len(batches):
+                logger.info(f"Sleeping for {self._sleep_seconds} seconds between embedding batches")
+                await asyncio.sleep(self._sleep_seconds)
 
         # Flatten results
         embeddings = []

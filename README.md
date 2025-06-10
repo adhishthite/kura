@@ -53,6 +53,7 @@ from kura.visualization import visualise_pipeline_results
 from kura.types import Conversation
 from kura.summarisation import SummaryModel
 from kura.cluster import ClusterModel
+from kura.embedding import OpenAIEmbeddingModel
 from kura.meta_cluster import MetaClusterModel
 from kura.dimensionality import HDBUMAP
 
@@ -60,7 +61,10 @@ async def main():
     # Initialize models
     console = Console()
     summary_model = SummaryModel(console=console)
-    cluster_model = ClusterModel(console=console)
+    cluster_model = ClusterModel(
+        embedding_model=OpenAIEmbeddingModel(sleep_seconds=1),
+        console=console,
+    )
     meta_cluster_model = MetaClusterModel(console=console)
     dimensionality_model = HDBUMAP()
 
