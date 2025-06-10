@@ -116,8 +116,8 @@ function App() {
         <div className="flex-1 p-6 overflow-hidden flex flex-col min-h-0">
           {/* 50/50 Split Layout - Top row 50%, Bottom row 50%, each with internal scrolling */}
           <div className="flex flex-col gap-6 h-full min-h-0">
-            {/* Top row - calc(50% - 12px) to account for gap */}
-            <div className="grid grid-cols-2 gap-6 min-h-0" style={{ height: 'calc(50% - 12px)' }}>
+            {/* Top row */}
+            <div className="flex-1 grid grid-cols-2 gap-6 min-h-0">
               {/* Top Left - Cluster Hierarchy */}
               <Card className="flex flex-col shadow-sm border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm h-full">
                 <CardHeader className="pb-4 bg-gradient-to-r from-accent/5 to-transparent border-b flex-shrink-0">
@@ -174,8 +174,8 @@ function App() {
               </Card>
             </div>
 
-            {/* Bottom row - calc(50% - 12px) to account for gap */}
-            <div className="min-h-0" style={{ height: 'calc(50% - 12px)' }}>
+            {/* Bottom row */}
+            <div className="flex-1 min-h-0">
               {/* Bottom - Cluster Details */}
               <Card className="flex flex-col shadow-sm border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm h-full">
                 <CardHeader className="pb-4 bg-gradient-to-r from-accent/5 to-transparent border-b flex-shrink-0">
