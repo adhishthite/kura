@@ -75,6 +75,8 @@ exclude = [
     "src/experimental",
     "src/typestubs",
     "**/tests/**",
+    "**/checkpoints/**",
+    "**/checkpoint/**",
 ]
 
 reportMissingImports = "error"

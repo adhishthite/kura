@@ -63,11 +63,14 @@ npm install
 # Start development server
 npm run dev
 
-# Build for production
+# Build for production (outputs to ../kura/static/dist)
 npm run build
 
 # Lint code
 npm run lint
+
+# Preview production build
+npm run preview
 ```
 
 ### Running the Application
@@ -118,15 +121,40 @@ Kura offers two APIs for different use cases:
 - `BaseDimensionalityReduction` / `HDBUMAP` (`kura/dimensionality.py`): Reduce dimensions for visualization
 - `Conversation` (`kura/types/conversation.py`): Core data model for user conversations
 
-### UI Components
+### UI Architecture
 
-The project includes a React/TypeScript frontend for visualizing the clusters, with components for:
+The project includes a React/TypeScript frontend built with Vite, using modern tooling and libraries:
 
-- Displaying cluster maps (`ui/src/components/cluster-map.tsx`)
-- Showing cluster details (`ui/src/components/cluster-details.tsx`)
-- Visualizing cluster hierarchies (`ui/src/components/cluster-tree.tsx`)
-- Handling conversation uploads (`ui/src/components/upload-form.tsx`)
-- Displaying individual conversations (`ui/src/components/conversation-dialog.tsx`)
+**Tech Stack:**
+
+- React 19 with TypeScript
+- Vite for build tooling and dev server
+- Tailwind CSS 4 with `@tailwindcss/vite` for styling
+- Radix UI for accessible component primitives
+- Recharts for data visualization
+- Zod for runtime type validation
+- Lucide React for icons
+
+**Key UI Components:**
+
+- `ClusterMap` (`ui/src/components/cluster-map.tsx`): Interactive scatter plot using Recharts to visualize cluster coordinates
+- `ClusterDetails` (`ui/src/components/cluster-details.tsx`): Panel showing selected cluster information and conversations
+- `ClusterTree` (`ui/src/components/cluster-tree.tsx`): Hierarchical tree view of cluster relationships
+- `UploadForm` (`ui/src/components/upload-form.tsx`): File upload interface for checkpoint directories
+- `ConversationDialog` (`ui/src/components/conversation-dialog.tsx`): Modal for displaying individual conversations
+
+**Data Flow:**
+
+1. User uploads checkpoint directory containing `conversations.json`, `summaries.jsonl`, and `dimensionality.jsonl`
+2. Files are parsed and validated using Zod schemas (`ui/src/types/kura.ts`)
+3. Cluster tree is built from flat cluster data (`ui/src/lib/tree.ts`)
+4. Interactive visualizations are rendered with state management in the main App component
+
+**Build Configuration:**
+
+- Vite configured to output to `../kura/static/dist` for integration with Python backend
+- Path aliases configured (`@/` maps to `./src/`)
+- TypeScript with strict type checking
 
 ### Extensibility
 
@@ -253,9 +281,58 @@ Kura uses checkpoint files to save state between runs (checkpoint handling in `k
 - `summaries.jsonl`: Summarized conversations
 - `clusters.jsonl`: Base cluster data
 - `meta_clusters.jsonl`: Hierarchical cluster data
-- `dimensionality.jsonl`: Projected cluster data for visualization
+- `dimensionality.jsonl`: Projected cluster data for visualization (used by UI)
 
 Checkpoints are stored in the directory specified by the `checkpoint_dir` parameter (default: `./checkpoints`).
+
+### UI Data Format
+
+The frontend expects specific data structures validated by Zod schemas in `ui/src/types/`:
+
+**Conversations** (`conversations.json`):
+
+```typescript
+{
+  chat_id: string;
+  created_at: string;
+  messages: Array<{
+    created_at: string;
+    role: "user" | "assistant";
+    content: string;
+  }>;
+  metadata: Record<
+    string,
+    string | number | boolean | Array<string | number | boolean>
+  >;
+}
+[];
+```
+
+**Summaries** (`summaries.jsonl`):
+
+```typescript
+{
+  chat_id: string;
+  summary: string;
+  metadata: Record<string, any>;
+}
+```
+
+**Clusters** (`dimensionality.jsonl`):
+
+```typescript
+{
+  id: string;
+  name: string;
+  description: string;
+  chat_ids: string[];
+  parent_id: string | null;
+  x_coord: number;
+  y_coord: number;
+  level: number;
+  count: number;
+}
+```
 
 ## Visualization
 
