@@ -34,6 +34,8 @@ class BaseEmbeddingModel(ABC):
 
 - **Batching:** Texts are automatically split into batches for efficient processing
 - **Concurrency:** Multiple batches are embedded in parallel (configurable concurrency)
+- **Rate Limiting:** The OpenAI embedding model supports `sleep_seconds` to pause between batches, helping avoid API rate limits
+- **Progress Logging:** After each batch completes, the model logs how many texts have been embedded so far
 - **Retry Logic:** Embedding requests are retried on failure for robustness
 - **Extensibility:** New embedding backends can be added by subclassing `BaseEmbeddingModel`
 - **Checkpointing:** Embeddings can be cached as part of the pipeline to avoid recomputation

@@ -37,6 +37,7 @@ from kura import (
 )
 from kura.summarisation import SummaryModel
 from kura.cluster import ClusterModel
+from kura.embedding import OpenAIEmbeddingModel
 from kura.meta_cluster import MetaClusterModel
 from kura.dimensionality import HDBUMAP
 # Assuming Conversation type might be needed for context, if not, it can be removed.
@@ -47,7 +48,9 @@ from kura.dimensionality import HDBUMAP
 
 # Configure models independently
 summary_model = SummaryModel()
-cluster_model = ClusterModel()
+cluster_model = ClusterModel(
+    embedding_model=OpenAIEmbeddingModel(sleep_seconds=1)
+)
 meta_cluster_model = MetaClusterModel(max_clusters=10)
 dimensionality_model = HDBUMAP()
 
@@ -68,7 +71,11 @@ async def analyze(conversations): # Added conversations as an argument
     clusters = await generate_base_clusters_from_conversation_summaries(
         summaries,
         model=cluster_model,
-        checkpoint_manager=checkpoint_manager
+        checkpoint_manager=checkpoint_manager,
+        batch_size=50,
+        sleep_seconds=1
+        # embedding and clustering progress logged after each batch
+        # periodic updates show progress within each batch
     )
 
     reduced = await reduce_clusters_from_base_clusters(

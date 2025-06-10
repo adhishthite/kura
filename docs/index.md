@@ -90,7 +90,11 @@ async def process_conversations():
     clusters = await generate_base_clusters_from_conversation_summaries(
         summaries,
         model=cluster_model,
-        checkpoint_manager=checkpoint_mgr
+        checkpoint_manager=checkpoint_mgr,
+        batch_size=50,
+        sleep_seconds=1
+        # embedding and clustering progress logged after each batch
+        # periodic updates printed when no console is available
     )
 
     # Step 3: Build hierarchy

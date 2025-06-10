@@ -53,6 +53,7 @@ from kura.visualization import visualise_pipeline_results
 from kura.types import Conversation
 from kura.summarisation import SummaryModel
 from kura.cluster import ClusterModel
+from kura.embedding import OpenAIEmbeddingModel
 from kura.meta_cluster import MetaClusterModel
 from kura.dimensionality import HDBUMAP
 
@@ -60,7 +61,10 @@ async def main():
     # Initialize models
     console = Console()
     summary_model = SummaryModel(console=console)
-    cluster_model = ClusterModel(console=console)
+    cluster_model = ClusterModel(
+        embedding_model=OpenAIEmbeddingModel(sleep_seconds=1),
+        console=console,
+    )
     meta_cluster_model = MetaClusterModel(console=console)
     dimensionality_model = HDBUMAP()
 
@@ -86,7 +90,11 @@ async def main():
     clusters = await generate_base_clusters_from_conversation_summaries(
         summaries,
         model=cluster_model,
-        checkpoint_manager=checkpoint_manager
+        checkpoint_manager=checkpoint_manager,
+        batch_size=50,
+        sleep_seconds=1,
+        # embedding and clustering progress logged after each batch
+        # periodic logs show progress within each batch
     )
 
     reduced_clusters = await reduce_clusters_from_base_clusters(
@@ -108,6 +116,7 @@ async def main():
     print(f"Created {len(reduced_clusters)} meta clusters")
     print(f"Checkpoints saved to: {checkpoint_manager.checkpoint_dir}")
     print("Failed summaries are stored in summaries_errors.jsonl if any errors occurred")
+    print("Failed clusters are stored in clusters_errors.jsonl if any errors occurred")
     print("Running again will load these errors and skip those conversations")
 
 if __name__ == "__main__":

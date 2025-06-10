@@ -46,3 +46,10 @@ class ClusterTreeNode(BaseModel):
     slug: str
     count: int
     children: list[str]
+
+
+class ClusteringError(BaseModel):
+    """Represents a failure to generate a cluster."""
+
+    chat_ids: list[str]
+    error: str
