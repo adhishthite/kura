@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import Callable, Optional
+
 from kura.summarisation import ConversationSummary
-from kura.types import Cluster
+from kura.types import Cluster, ClusteringError
 
 
 class BaseClusterModel(ABC):
@@ -26,6 +28,7 @@ class BaseClusterModel(ABC):
         processed_keys: set[tuple[str, ...]] | None = None,
         batch_size: int = 100,
         sleep_seconds: float = 0.0,
+        on_batch_complete: Optional[Callable[[list[Cluster], list[ClusteringError]], None]] = None,
     ) -> list[Cluster]:
         pass
 

@@ -37,6 +37,7 @@ clusters = await generate_base_clusters_from_conversation_summaries(
     model=cluster_model,
     batch_size=50,
     sleep_seconds=1,
+    # checkpoints are saved after each batch
 )
 meta_clusters = await reduce_clusters_from_base_clusters(clusters, model=meta_cluster_model)
 projected = await reduce_dimensionality_from_clusters(meta_clusters, model=dim_reduction_model)

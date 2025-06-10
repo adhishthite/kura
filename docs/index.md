@@ -93,6 +93,7 @@ async def process_conversations():
         checkpoint_manager=checkpoint_mgr,
         batch_size=50,
         sleep_seconds=1
+        # progress and checkpoints written after each batch
     )
 
     # Step 3: Build hierarchy

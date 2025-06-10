@@ -293,11 +293,29 @@ async def generate_base_clusters_from_conversation_summaries(
         f"Generating clusters for {len(summaries)} summaries in batches of {batch_size}"
     )
 
+    all_clusters = list(cached)
+    all_errors = list(cached_errors)
+
+    async def _on_batch(new_clusters: list[Cluster], new_errors: list[ClusteringError]):
+        nonlocal all_clusters, all_errors
+        all_clusters.extend(new_clusters)
+        all_errors.extend(new_errors)
+        if checkpoint_manager:
+            checkpoint_manager.save_checkpoint(model.checkpoint_filename, all_clusters)
+            if all_errors:
+                checkpoint_manager.save_checkpoint(
+                    model.error_checkpoint_filename, all_errors
+                )
+            logger.info(
+                f"Checkpoint saved with {len(all_clusters)} clusters"
+            )
+
     new_clusters = await model.cluster_summaries(
         summaries,
         processed_keys=processed_keys,
         batch_size=batch_size,
         sleep_seconds=sleep_seconds,
+        on_batch_complete=_on_batch,
     )
 
     all_clusters = cached + new_clusters

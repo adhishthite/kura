@@ -9,7 +9,7 @@ from kura.utils.openai_utils import create_instructor_client
 import asyncio
 import logging
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Callable
 
 if TYPE_CHECKING:
     from rich.console import Console
@@ -216,6 +216,7 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
         processed_keys: set[tuple[str, ...]] | None = None,
         batch_size: int = 100,
         sleep_seconds: float = 0.0,
+        on_batch_complete: Optional[Callable[[list[Cluster], list[ClusteringError]], None]] = None,
     ) -> list[Cluster]:
         """Generates clusters from summaries and their embeddings."""
         logger.info(
@@ -256,6 +257,7 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
             tasks_data.append((conversation_summaries, contrastive_examples))
 
         clusters: list[Cluster] = []
+        error_index = 0
         for start in range(0, len(tasks_data), batch_size):
             batch = tasks_data[start : start + batch_size]
             tasks = [
@@ -270,7 +272,12 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
                 desc="Generating Base Clusters",
                 show_preview=True,
             )
-            clusters.extend([r for r in results if r is not None])
+            batch_clusters = [r for r in results if r is not None]
+            clusters.extend(batch_clusters)
+            new_errors = self.errors[error_index:]
+            error_index = len(self.errors)
+            if on_batch_complete:
+                on_batch_complete(batch_clusters, new_errors)
             if sleep_seconds > 0 and start + batch_size < len(tasks_data):
                 logger.info(f"Sleeping for {sleep_seconds} seconds before next batch")
                 await asyncio.sleep(sleep_seconds)
@@ -285,6 +292,7 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
         processed_keys: set[tuple[str, ...]] | None = None,
         batch_size: int = 100,
         sleep_seconds: float = 0.0,
+        on_batch_complete: Optional[Callable[[list[Cluster], list[ClusteringError]], None]] = None,
     ) -> list[Cluster]:
         if not summaries:
             logger.warning("Empty summaries list provided to cluster_summaries")
@@ -308,6 +316,7 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
             processed_keys=processed_keys,
             batch_size=batch_size,
             sleep_seconds=sleep_seconds,
+            on_batch_complete=on_batch_complete,
         )
         logger.info(
             f"Clustering process completed: generated {len(clusters)} clusters from {len(summaries)} summaries"

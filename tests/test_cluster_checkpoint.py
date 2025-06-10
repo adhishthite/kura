@@ -24,6 +24,7 @@ class DummyClusterModel(BaseClusterModel):
         processed_keys: set[tuple[str, ...]] | None = None,
         batch_size: int = 100,
         sleep_seconds: float = 0.0,
+        on_batch_complete=None,
     ) -> list[Cluster]:
         key = tuple(sorted(s.chat_id for s in summaries))
         self.called.append(key)
@@ -61,3 +62,56 @@ async def test_generate_clusters_skips_errors(tmp_path):
 
     assert model.called == [("1", "2")]
     assert [tuple(c.chat_ids) for c in results] == [("1",)]
+
+
+class FailingModel(DummyClusterModel):
+    async def cluster_summaries(
+        self,
+        summaries: list[ConversationSummary],
+        *,
+        processed_keys: set[tuple[str, ...]] | None = None,
+        batch_size: int = 1,
+        sleep_seconds: float = 0.0,
+        on_batch_complete=None,
+    ) -> list[Cluster]:
+        first = summaries[0]
+        cluster = Cluster(
+            name="c1",
+            description="d",
+            slug="slug",
+            chat_ids=[first.chat_id],
+            parent_id=None,
+        )
+        if on_batch_complete:
+            on_batch_complete([cluster], [])
+        raise RuntimeError("boom")
+
+
+@pytest.mark.asyncio
+async def test_generate_clusters_resume_from_checkpoint(tmp_path):
+    summaries = [
+        ConversationSummary(chat_id="1", summary="a", metadata={}),
+        ConversationSummary(chat_id="2", summary="b", metadata={}),
+    ]
+
+    manager = CheckpointManager(str(tmp_path), enabled=True)
+    with pytest.raises(RuntimeError):
+        await generate_base_clusters_from_conversation_summaries(
+            summaries,
+            model=FailingModel(),
+            checkpoint_manager=manager,
+            batch_size=1,
+        )
+
+    saved = manager.load_checkpoint("clusters.jsonl", Cluster)
+    assert [tuple(c.chat_ids) for c in saved] == [("1",)]
+
+    model = DummyClusterModel()
+    results = await generate_base_clusters_from_conversation_summaries(
+        summaries,
+        model=model,
+        checkpoint_manager=manager,
+        batch_size=1,
+    )
+
+    assert [tuple(c.chat_ids) for c in results] == [("1",), ("2",)]
