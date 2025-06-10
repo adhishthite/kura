@@ -68,37 +68,50 @@ const UploadForm = ({
       }
     }
   };
+
   return (
-    <Card className="max-w-2xl mx-auto mt-10">
-      <CardHeader>
-        <CardTitle>Load Checkpoint</CardTitle>
-        <CardDescription>
-          Select the checkpoint directory created by Kura{" "}
+    <Card className="w-full shadow-lg border-0 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
+      <CardHeader className="text-center space-y-2 pb-6">
+        <CardTitle className="text-xl font-semibold">Load Checkpoint</CardTitle>
+        <CardDescription className="text-base">
+          Select the checkpoint directory created by Kura
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Input
-          type="file"
-          multiple
-        // @ts-expect-error - nonstandard attribute used for directory upload
-        webkitdirectory=""
-          className="cursor-pointer"
-          accept=""
-          onChange={handleFileChange}
-        />
-        <div className="mt-4 text-left text-muted-foreground text-sm">
-          {conversations && summaries && clusters && (
-            <div>
-              <p>
-                Loaded in {conversations.length} conversations,{" "}
-                {summaries?.length} summaries, {clusters?.length} clusters
-              </p>
-              <Button className="w-full mt-4" onClick={handleVisualiseClusters}>
-                Visualise Clusters
-              </Button>
-            </div>
-          )}
+      <CardContent className="space-y-2 pt-0">
+        <div className="space-y-2">
+          <Input
+            type="file"
+            multiple
+            // @ts-expect-error - nonstandard attribute used for directory upload
+            webkitdirectory=""
+            className="cursor-pointer h-12 text-center border-dashed border-2 hover:border-primary/50 transition-colors"
+            accept=""
+            onChange={handleFileChange}
+          />
+          <p className="text-xs text-muted-foreground text-center y-2">
+            Choose Files • No file chosen
+          </p>
         </div>
+
+        {conversations && summaries && clusters && (
+          <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+            <div className="text-center">
+              <p className="text-sm font-medium text-foreground">
+                Data Successfully Loaded
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {conversations.length} conversations • {summaries?.length}{" "}
+                summaries • {clusters?.length} clusters
+              </p>
+            </div>
+            <Button
+              className="w-full h-11 font-medium"
+              onClick={handleVisualiseClusters}
+            >
+              Visualise Clusters
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

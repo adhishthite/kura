@@ -140,7 +140,13 @@ function App() {
                         top-level clusters
                       </div>
                       <div className="h-full overflow-hidden">
-                        <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading cluster tree...</div>}>
+                        <Suspense
+                          fallback={
+                            <div className="flex items-center justify-center h-full text-muted-foreground">
+                              Loading cluster tree...
+                            </div>
+                          }
+                        >
                           <ClusterTree
                             clusterTree={clusterTree}
                             onSelectCluster={setSelectedCluster}
@@ -167,7 +173,13 @@ function App() {
                 <CardContent className="flex-1 p-4 overflow-hidden min-h-0">
                   {selectedCluster && clusters ? (
                     <div className="h-full w-full">
-                      <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading cluster map...</div>}>
+                      <Suspense
+                        fallback={
+                          <div className="flex items-center justify-center h-full text-muted-foreground">
+                            Loading cluster map...
+                          </div>
+                        }
+                      >
                         <ClusterMap
                           clusters={flatClusterNodes.filter(
                             (item) => item.level === selectedCluster.level
@@ -196,7 +208,13 @@ function App() {
                 </CardHeader>
                 <CardContent className="flex-1 p-4 overflow-hidden min-h-0">
                   {selectedCluster ? (
-                    <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading cluster details...</div>}>
+                    <Suspense
+                      fallback={
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          Loading cluster details...
+                        </div>
+                      }
+                    >
                       <ClusterDetails
                         selectedCluster={selectedCluster}
                         conversationMetadataMap={conversationMetadataMap}
@@ -221,7 +239,13 @@ function App() {
                 </CardHeader>
                 <CardContent className="flex-1 p-4 overflow-hidden min-h-0">
                   {selectedCluster ? (
-                    <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading conversations...</div>}>
+                    <Suspense
+                      fallback={
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          Loading conversations...
+                        </div>
+                      }
+                    >
                       <ClusterDetails
                         selectedCluster={selectedCluster}
                         conversationMetadataMap={conversationMetadataMap}
