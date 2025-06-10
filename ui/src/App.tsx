@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 
 import UploadForm from "./components/upload-form";
 import type {
@@ -14,12 +14,14 @@ import {
   type ClusterTreeNode,
 } from "./types/cluster";
 import { buildClusterTree, flattenClusterTree } from "./lib/tree";
-import ClusterTree from "./components/cluster-tree";
-import ClusterDetails from "./components/cluster-details";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 import { Upload } from "lucide-react";
-import ClusterMap from "./components/cluster-map";
 import Header from "./components/header";
+
+// Lazy load heavy components
+const ClusterTree = lazy(() => import("./components/cluster-tree"));
+const ClusterDetails = lazy(() => import("./components/cluster-details"));
+const ClusterMap = lazy(() => import("./components/cluster-map"));
 
 function App() {
   const [conversations, setConversations] = useState<ConversationsList | null>(
@@ -138,10 +140,12 @@ function App() {
                         top-level clusters
                       </div>
                       <div className="h-full overflow-hidden">
-                        <ClusterTree
-                          clusterTree={clusterTree}
-                          onSelectCluster={setSelectedCluster}
-                        />
+                        <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading cluster tree...</div>}>
+                          <ClusterTree
+                            clusterTree={clusterTree}
+                            onSelectCluster={setSelectedCluster}
+                          />
+                        </Suspense>
                       </div>
                     </>
                   ) : (
@@ -163,11 +167,13 @@ function App() {
                 <CardContent className="flex-1 p-4 overflow-hidden min-h-0">
                   {selectedCluster && clusters ? (
                     <div className="h-full w-full">
-                      <ClusterMap
-                        clusters={flatClusterNodes.filter(
-                          (item) => item.level === selectedCluster.level
-                        )}
-                      />
+                      <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading cluster map...</div>}>
+                        <ClusterMap
+                          clusters={flatClusterNodes.filter(
+                            (item) => item.level === selectedCluster.level
+                          )}
+                        />
+                      </Suspense>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -190,11 +196,13 @@ function App() {
                 </CardHeader>
                 <CardContent className="flex-1 p-4 overflow-hidden min-h-0">
                   {selectedCluster ? (
-                    <ClusterDetails
-                      selectedCluster={selectedCluster}
-                      conversationMetadataMap={conversationMetadataMap}
-                      showConversations={false}
-                    />
+                    <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading cluster details...</div>}>
+                      <ClusterDetails
+                        selectedCluster={selectedCluster}
+                        conversationMetadataMap={conversationMetadataMap}
+                        showConversations={false}
+                      />
+                    </Suspense>
                   ) : (
                     <div className="text-muted-foreground text-center py-8">
                       Select a cluster from the hierarchy to view details
@@ -213,11 +221,13 @@ function App() {
                 </CardHeader>
                 <CardContent className="flex-1 p-4 overflow-hidden min-h-0">
                   {selectedCluster ? (
-                    <ClusterDetails
-                      selectedCluster={selectedCluster}
-                      conversationMetadataMap={conversationMetadataMap}
-                      showConversations={true}
-                    />
+                    <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading conversations...</div>}>
+                      <ClusterDetails
+                        selectedCluster={selectedCluster}
+                        conversationMetadataMap={conversationMetadataMap}
+                        showConversations={true}
+                      />
+                    </Suspense>
                   ) : (
                     <div className="text-muted-foreground text-center py-8">
                       Select a cluster to view conversations
