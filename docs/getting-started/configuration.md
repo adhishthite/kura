@@ -73,7 +73,7 @@ async def analyze(conversations): # Added conversations as an argument
         model=cluster_model,
         checkpoint_manager=checkpoint_manager,
         batch_size=50,
-        sleep_seconds=1
+        sleep_seconds=1,
         # embedding and clustering progress logged after each batch
         # periodic updates show progress within each batch
     )
