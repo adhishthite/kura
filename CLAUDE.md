@@ -118,6 +118,7 @@ Kura offers two APIs for different use cases:
 ### UI Components
 
 The project includes a React/TypeScript frontend for visualizing the clusters, with components for:
+
 - Displaying cluster maps (`ui/src/components/cluster-map.tsx`)
 - Showing cluster details (`ui/src/components/cluster-details.tsx`)
 - Visualizing cluster hierarchies (`ui/src/components/cluster-tree.tsx`)
@@ -127,6 +128,7 @@ The project includes a React/TypeScript frontend for visualizing the clusters, w
 ### Extensibility
 
 The system is designed to be modular, allowing custom implementations of:
+
 - Embedding models
 - Summarization models
 - Clustering algorithms
@@ -137,13 +139,16 @@ The system is designed to be modular, allowing custom implementations of:
 Kura supports two types of metadata for enriching conversation analysis:
 
 ### 1. LLM Extractors
+
 Custom metadata can be extracted from conversations using LLM-powered extractors (implemented in `kura/summarisation.py`). These functions run on raw conversations to identify properties like:
+
 - Language detection
 - Sentiment analysis
 - Topic identification
 - Custom metrics
 
 Example of creating a custom extractor:
+
 ```python
 async def language_extractor(
     conversation: Conversation,
@@ -152,7 +157,7 @@ async def language_extractor(
 ) -> ExtractedProperty:
     sem = sems.get("default")
     client = clients.get("default")
-    
+
     async with sem:
         resp = await client.chat.completions.create(
             model="gemini-2.0-flash",
@@ -177,7 +182,9 @@ async def language_extractor(
 ```
 
 ### 2. Conversation Metadata
+
 Metadata can be directly attached to conversation objects when loading data (implemented in `kura/types/conversation.py`):
+
 ```python
 conversations = Conversation.from_hf_dataset(
     "allenai/WildChat-nontoxic",
@@ -194,22 +201,26 @@ conversations = Conversation.from_hf_dataset(
 Kura supports multiple data sources (implementations in `kura/types/conversation.py`):
 
 ### Claude Conversation History
+
 ```python
 from kura.types import Conversation
 conversations = Conversation.from_claude_conversation_dump("conversations.json")
 ```
 
 ### Hugging Face Datasets
+
 ```python
 from kura.types import Conversation
 conversations = Conversation.from_hf_dataset(
-    "ivanleomk/synthetic-gemini-conversations", 
+    "ivanleomk/synthetic-gemini-conversations",
     split="train"
 )
 ```
 
 ### Custom Conversations
+
 For custom data formats, create Conversation objects directly:
+
 ```python
 from kura.types import Conversation, Message
 from datetime import datetime
@@ -234,6 +245,7 @@ conversations = [
 ## Checkpoints
 
 Kura uses checkpoint files to save state between runs (checkpoint handling in `kura/kura.py`):
+
 - `conversations.json`: Raw conversation data
 - `summaries.jsonl`: Summarized conversations
 - `clusters.jsonl`: Base cluster data
@@ -247,12 +259,14 @@ Checkpoints are stored in the directory specified by the `checkpoint_dir` parame
 Kura includes visualization tools:
 
 ### CLI Visualization
+
 ```python
 # Tree visualization implemented in kura/kura.py
 kura.visualise_clusters()
 ```
 
 ### Web Server
+
 ```bash
 # Web server implemented in kura/cli/server.py
 kura start-app
@@ -260,6 +274,7 @@ kura start-app
 ```
 
 The web interface provides:
+
 - Interactive cluster map
 - Cluster hierarchy tree
 - Cluster details panel
@@ -271,12 +286,14 @@ The web interface provides:
 The procedural API in `kura/v1/` provides a functional approach to the pipeline:
 
 ### Key Functions
+
 - `summarise_conversations(conversations, *, model, checkpoint_manager=None)` - Generate summaries
 - `generate_base_clusters_from_conversation_summaries(summaries, *, model, checkpoint_manager=None)` - Create initial clusters
 - `reduce_clusters_from_base_clusters(clusters, *, model, checkpoint_manager=None)` - Build hierarchy
 - `reduce_dimensionality_from_clusters(clusters, *, model, checkpoint_manager=None)` - Project to 2D
 
 ### Example Usage
+
 ```python
 from kura import (
     summarise_conversations,
@@ -304,6 +321,7 @@ clusters = await generate_base_clusters_from_conversation_summaries(
 ```
 
 ### Benefits
+
 - Fine-grained control over each step
 - Easy to skip or reorder steps
 - Support for heterogeneous models (OpenAI, vLLM, Hugging Face, etc.)
