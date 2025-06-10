@@ -5,7 +5,7 @@ export const ConversationInfoSchema = ConversationSchema.extend({
   summary: z.string(),
 });
 
-export const ClusterTreeNodeSchema: z.ZodType<any> =
+export const ClusterTreeNodeSchema: z.ZodType<unknown> =
   ConversationClusterSchema.extend({
     children: z.lazy(() => z.array(ClusterTreeNodeSchema)),
     depth: z.number().optional(),

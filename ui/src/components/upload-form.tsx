@@ -80,8 +80,8 @@ const UploadForm = ({
         <Input
           type="file"
           multiple
-          //@ts-ignore
-          webkitdirectory=""
+        // @ts-expect-error - nonstandard attribute used for directory upload
+        webkitdirectory=""
           className="cursor-pointer"
           accept=""
           onChange={handleFileChange}
