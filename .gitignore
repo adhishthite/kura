@@ -55,4 +55,4 @@ checkpoint/
 
 scripts/eval.py
 scripts/es_to_kura.py
-kura/kura/static/*
+kura/static/*
