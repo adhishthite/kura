@@ -55,3 +55,7 @@ export default tseslint.config({
 
 ## Layout
 The main interface splits the screen into two halves: cluster hierarchy and map on the top, and cluster details below. Each section is scrollable while the page itself remains fixed.
+
+### Card Component
+
+UI panels rely on a lightweight `Card` component composed with Tailwind CSS. The component wraps content in a bordered, rounded container and provides simple header, content, and footer sections for consistent spacing.

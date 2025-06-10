@@ -10,7 +10,7 @@ interface ClusterDetailsProps {
 }
 
 interface MetadataSummaryProps {
-  aggregatedMetadata: Record<string, any[]>;
+  aggregatedMetadata: Record<string, unknown[]>;
 }
 
 function MetadataSummary({ aggregatedMetadata }: MetadataSummaryProps) {
@@ -48,10 +48,10 @@ function MetadataSummary({ aggregatedMetadata }: MetadataSummaryProps) {
         {Object.entries(aggregatedMetadata).map(([key, values]) => {
           // Count occurrences based on aggregation mode
           const valueCounts = values.reduce(
-            (acc: Record<string, number>, val: any) => {
+            (acc: Record<string, number>, val: unknown) => {
               if (Array.isArray(val) && aggregationMode === "individual") {
                 // For individual mode, count each item in the array separately
-                val.forEach((item: any) => {
+                  val.forEach((item: unknown) => {
                   const itemStr = String(item);
                   acc[itemStr] = (acc[itemStr] || 0) + 1;
                 });
@@ -107,7 +107,7 @@ export default function ClusterDetails({
   });
 
   const aggregatedMetadata = chats.reduce(
-    (acc: Record<string, any[]>, chat: ConversationInfo | undefined) => {
+    (acc: Record<string, unknown[]>, chat: ConversationInfo | undefined) => {
       if (!chat || !chat.metadata) return acc;
 
       // Iterate through each metadata key-value pair
