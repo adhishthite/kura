@@ -94,6 +94,7 @@ async def main():
         batch_size=50,
         sleep_seconds=1,
         # embedding and clustering progress logged after each batch
+        # periodic logs show progress within each batch
     )
 
     reduced_clusters = await reduce_clusters_from_base_clusters(

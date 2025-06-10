@@ -38,6 +38,7 @@ clusters = await generate_base_clusters_from_conversation_summaries(
     batch_size=50,
     sleep_seconds=1,
     # embedding and clustering progress is logged after each batch
+    # periodic log messages show progress within each batch
 )
 meta_clusters = await reduce_clusters_from_base_clusters(clusters, model=meta_cluster_model)
 projected = await reduce_dimensionality_from_clusters(meta_clusters, model=dim_reduction_model)

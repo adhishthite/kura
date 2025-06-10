@@ -75,6 +75,7 @@ async def analyze(conversations): # Added conversations as an argument
         batch_size=50,
         sleep_seconds=1
         # embedding and clustering progress logged after each batch
+        # periodic updates show progress within each batch
     )
 
     reduced = await reduce_clusters_from_base_clusters(

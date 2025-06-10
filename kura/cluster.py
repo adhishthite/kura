@@ -453,5 +453,13 @@ Do not elaborate beyond what you say in the tags. Remember to analyze both the s
                     # Rich not available or Live error, run silently
                     return await asyncio.gather(*tasks)
         else:
-            # No console, run silently
-            return await asyncio.gather(*tasks)
+            # No console, log basic progress
+            completed_tasks = []
+            total = len(tasks)
+            for i, task in enumerate(asyncio.as_completed(tasks)):
+                result = await task
+                completed_tasks.append(result)
+                if (i + 1) % max(1, total // 10) == 0 or i == total - 1:
+                    logger.info(f"{desc}: {i + 1}/{total} completed")
+
+            return completed_tasks

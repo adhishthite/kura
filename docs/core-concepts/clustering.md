@@ -104,7 +104,7 @@ The cluster name should be a sentence in the imperative that captures the user's
 - **Embedding Model:** Use any model implementing `BaseEmbeddingModel` (e.g., local or cloud-based embeddings).
 - **LLM Model:** The LLM used for naming/describing clusters is configurable (default: `openai/gpt-4o-mini`).
 - **Concurrency:** `max_concurrent_requests` controls parallelism for embedding and LLM calls.
-- **Progress Reporting:** Progress is logged after each batch of cluster generation, and optional Rich or tqdm integration provides progress bars and live previews.
+ - **Progress Reporting:** Progress is logged after each batch of cluster generation. When running without a Rich console, the library now logs periodic updates as clusters finish generating so you are never left waiting without feedback.
 
 ---
 

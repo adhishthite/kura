@@ -94,6 +94,7 @@ async def process_conversations():
         batch_size=50,
         sleep_seconds=1
         # embedding and clustering progress logged after each batch
+        # periodic updates printed when no console is available
     )
 
     # Step 3: Build hierarchy
