@@ -132,7 +132,7 @@ function App() {
                   {clusterTree ? (
                     <>
                       <div className="text-xs text-muted-foreground mb-2 flex-shrink-0">
-                        Tree loaded: {clusterTree.children?.length || 0} top-level
+                        Tree loaded: {clusterTree.children.length || 0} top-level
                         clusters
                       </div>
                       <div className="flex-1 min-h-0">
@@ -162,7 +162,7 @@ function App() {
                   {selectedCluster && clusters ? (
                     <ClusterMap
                       clusters={flatClusterNodes.filter(
-                        (item) => item.level == selectedCluster.level
+                        (item) => item.level === selectedCluster.level
                       )}
                     />
                   ) : (
