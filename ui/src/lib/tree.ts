@@ -17,7 +17,12 @@ export const buildClusterTree = (
   parent_id: string | null,
   depth: number
 ): ClusterTreeNode => {
+  if (depth === 0) {
+    console.log("🌳 Building cluster tree with", clusters.length, "clusters");
+  }
+  
   const children = clusters.filter((c) => c.parent_id === parent_id);
+  console.log(`🌳 At depth ${depth}, parent_id=${parent_id}, found ${children.length} children`);
 
   const parent = clusters.find((c) => c.id === parent_id) ?? {
     name: "Root",
@@ -37,7 +42,7 @@ export const buildClusterTree = (
   });
 
   if (!data.success) {
-    console.error(data.error);
+    console.error("❌ Failed to parse cluster tree node:", data.error);
     throw new Error("Failed to build cluster tree");
   }
 
