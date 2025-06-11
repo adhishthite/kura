@@ -55,35 +55,64 @@ function App() {
   };
 
   const handleVisualiseClusters = () => {
-    if (!clusters || !conversations) return;
-    const metadataMap = new Map<string, ConversationInfo>();
-    for (const conversation of conversations) {
-      const summary = summaries?.find(
-        (sum) => sum.chat_id === conversation.chat_id
-      )?.summary;
-      if (!summary) {
-        throw new Error(
-          `No summary found for conversation ${conversation.chat_id}`
-        );
-      }
-
-      const conversationWithSummary = ConversationInfoSchema.parse({
-        ...conversation,
-        summary,
-      });
-
-      metadataMap.set(conversation.chat_id, conversationWithSummary);
+    console.log("🚀 handleVisualiseClusters called");
+    console.log("Clusters:", clusters);
+    console.log("Conversations:", conversations);
+    console.log("Summaries:", summaries);
+    
+    if (!clusters || !conversations) {
+      console.error("❌ Missing data - clusters or conversations is null");
+      return;
     }
 
-    // Create this so we can quickly compute the cluster metadata
-    setConversationMetadataMap(metadataMap);
+    console.log("✅ Data validation passed, processing...");
+    
+    try {
+      const metadataMap = new Map<string, ConversationInfo>();
+      let skippedCount = 0;
+      
+      for (const conversation of conversations) {
+        const summary = summaries?.find(
+          (sum) => sum.chat_id === conversation.chat_id
+        )?.summary;
+        
+        if (!summary) {
+          console.warn(`⚠️ No summary found for conversation ${conversation.chat_id}, skipping...`);
+          skippedCount++;
+          continue;
+        }
 
-    // Now we build a tree of clusters
-    const clusterTree = buildClusterTree(clusters, null, 0);
-    setClusterTree(clusterTree);
+        const conversationWithSummary = ConversationInfoSchema.parse({
+          ...conversation,
+          summary,
+        });
 
-    const flatClusterNodes = flattenClusterTree(clusterTree, []);
-    setFlatClusterNodes(flatClusterNodes);
+        metadataMap.set(conversation.chat_id, conversationWithSummary);
+      }
+      
+      if (skippedCount > 0) {
+        console.log(`⚠️ Skipped ${skippedCount} conversations without summaries`);
+      }
+
+      console.log("✅ Created metadata map with", metadataMap.size, "entries");
+      
+      // Create this so we can quickly compute the cluster metadata
+      setConversationMetadataMap(metadataMap);
+
+      // Now we build a tree of clusters
+      console.log("🌳 Building cluster tree...");
+      const clusterTree = buildClusterTree(clusters, null, 0);
+      console.log("✅ Cluster tree built:", clusterTree);
+      setClusterTree(clusterTree);
+
+      const flatClusterNodes = flattenClusterTree(clusterTree, []);
+      console.log("✅ Flattened cluster nodes:", flatClusterNodes.length, "nodes");
+      setFlatClusterNodes(flatClusterNodes);
+      
+      console.log("🎉 Visualization setup complete!");
+    } catch (error) {
+      console.error("❌ Error in handleVisualiseClusters:", error);
+    }
   };
 
   return (

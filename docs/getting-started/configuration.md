@@ -13,6 +13,9 @@ Kura saves several checkpoint files during processing:
 | `clusters.jsonl`       | Base cluster data                |
 | `meta_clusters.jsonl`  | Hierarchical cluster data        |
 | `dimensionality.jsonl` | Projected data for visualization |
+| `summaries_errors.jsonl` | Summaries that failed to generate |
+| `clusters_errors.jsonl` | Clustering failures              |
+| `meta_clusters_errors.jsonl` | Meta-clustering failures         |
 
 Checkpoint filenames are now defined as properties in their respective model classes. When using the procedural API, checkpoint management is handled via the `CheckpointManager`.
 

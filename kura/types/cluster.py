@@ -53,3 +53,10 @@ class ClusteringError(BaseModel):
 
     chat_ids: list[str]
     error: str
+
+
+class MetaClusteringError(BaseModel):
+    """Represents a failure during meta clustering."""
+
+    cluster_ids: list[str]
+    error: str
