@@ -6,7 +6,7 @@ from kura.base_classes import (
     BaseClusteringMethod,
 )
 import math
-from kura.types.cluster import Cluster, GeneratedCluster
+from kura.types.cluster import Cluster, GeneratedCluster, MetaClusteringError
 from kura.embedding import OpenAIEmbeddingModel
 from kura.utils.openai_utils import create_instructor_client
 from asyncio import Semaphore
@@ -103,6 +103,7 @@ class MetaClusterModel(BaseMetaClusterModel):
         self.clustering_model = clustering_model
         self.model = model
         self.console = console
+        self.errors: list[MetaClusteringError] = []
 
         logger.info(
             f"Initialized MetaClusterModel with model={model}, max_concurrent_requests={max_concurrent_requests}, embedding_model={type(embedding_model).__name__}, clustering_model={type(clustering_model).__name__}, max_clusters={max_clusters}"
@@ -273,11 +274,12 @@ class MetaClusterModel(BaseMetaClusterModel):
         self, clusters: list[Cluster], sem: Semaphore
     ) -> list[str]:
         async with sem:
-            resp = await self.client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": """
+            try:
+                resp = await self.client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": """
                 You are tasked with creating higher-level cluster names based on a given list of clusters and their descriptions. Your goal is to come up with broader categories that could encompass one or more of the provided clusters
 
                 First, review the list of clusters and their descriptions:
@@ -299,27 +301,38 @@ class MetaClusterModel(BaseMetaClusterModel):
 
                 Focus on creating meaningful, distinct and precise ( but not overly specific ) higher-level cluster names that could encompass multiple sub-clusters.
                 """.strip(),
+                        },
+                    ],
+                    response_model=CandidateClusters,
+                    context={
+                        "clusters": clusters,
+                        "desired_number": math.ceil(len(clusters) / 2)
+                        if len(clusters)
+                        >= 3  # If we have two clusters we just merge them tbh
+                        else 1,
                     },
-                ],
-                response_model=CandidateClusters,
-                context={
-                    "clusters": clusters,
-                    "desired_number": math.ceil(len(clusters) / 2)
-                    if len(clusters)
-                    >= 3  # If we have two clusters we just merge them tbh
-                    else 1,
-                },
-                max_retries=3,
-            )
-            return resp.candidate_cluster_names
+                    max_retries=3,
+                )
+                return resp.candidate_cluster_names
+            except Exception as e:
+                logger.error(
+                    f"Failed to generate candidate clusters for {len(clusters)} clusters: {e}"
+                )
+                self.errors.append(
+                    MetaClusteringError(
+                        cluster_ids=[c.id for c in clusters], error=str(e)
+                    )
+                )
+                return []
 
     async def label_cluster(self, cluster: Cluster, candidate_clusters: list[str]):
         async with self.sem:
-            resp = await self.client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": """
+            try:
+                resp = await self.client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": """
 You are tasked with categorizing a specific cluster into one of the provided higher-level clusters for observability, monitoring, and content moderation. Your goal is to determine which higher-level cluster best fits the given specific cluster based on its name and description.
 
 First, here are the ONLY valid higher-level clusters you may select from:
@@ -359,27 +372,35 @@ Description: {{ cluster.description }}
 
 Based on this information, determine the most appropriate higher-level cluster and provide your answer as instructed.
                         """,
-                    }
-                ],
-                response_model=ClusterLabel,
-                context={
+                        }
+                    ],
+                    response_model=ClusterLabel,
+                    context={
+                        "cluster": cluster,
+                        "candidate_clusters": candidate_clusters,
+                    },
+                    max_retries=3,
+                )
+                return {
                     "cluster": cluster,
-                    "candidate_clusters": candidate_clusters,
-                },
-                max_retries=3,
-            )
-            return {
-                "cluster": cluster,
-                "label": resp.higher_level_cluster,
-            }
+                    "label": resp.higher_level_cluster,
+                }
+            except Exception as e:
+                logger.error(f"Failed to label cluster {cluster.id}: {e}")
+                self.errors.append(
+                    MetaClusteringError(cluster_ids=[cluster.id], error=str(e))
+                )
+                # Use a placeholder label to keep pipeline moving
+                return {"cluster": cluster, "label": f"unlabeled_{cluster.id}"}
 
     async def rename_cluster_group(self, clusters: list[Cluster]) -> list[Cluster]:
         async with self.sem:
-            resp = await self.client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "system",
-                        "content": """
+            try:
+                resp = await self.client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": """
                         You are tasked with summarizing a group of related cluster names into a short, precise, and accurate overall description and name. Your goal is to create a concise summary that captures the essence of these clusters
 
                         The cluster name should be at most ten words long (perhaps less) and be specific but also reflective of most of the clusters that comprise them. The cluster name should be a sentence in the imperative that captures the user's request. For example, 'Brainstorm ideas for a birthday party' or 'Help me find a new job are good examples.
@@ -388,10 +409,10 @@ Based on this information, determine the most appropriate higher-level cluster a
 
                         Ensure your summary and name accurately represent the clusters and are specific to the clusters.
                         """,
-                    },
-                    {
-                        "role": "user",
-                        "content": """
+                        },
+                        {
+                            "role": "user",
+                            "content": """
                         Here are the related cluster names
                         <clusters>
                             {% for cluster in clusters %}
@@ -399,39 +420,50 @@ Based on this information, determine the most appropriate higher-level cluster a
                             {% endfor %}
                         </clusters>
                         """,
-                    },
-                ],
-                context={"clusters": clusters},
-                response_model=GeneratedCluster,
-            )
-
-            res = []
-
-            new_cluster = Cluster(
-                name=resp.name,
-                description=resp.summary,
-                slug=resp.slug,
-                chat_ids=[
-                    chat_id for cluster in clusters for chat_id in cluster.chat_ids
-                ],
-                parent_id=None,
-            )
-
-            res.append(new_cluster)
-
-            for cluster in clusters:
-                res.append(
-                    Cluster(
-                        id=cluster.id,
-                        name=cluster.name,
-                        description=cluster.description,
-                        slug=cluster.slug,
-                        chat_ids=cluster.chat_ids,
-                        parent_id=new_cluster.id,
-                    )
+                        },
+                    ],
+                    context={"clusters": clusters},
+                    response_model=GeneratedCluster,
                 )
 
-            return res
+                res = []
+
+                new_cluster = Cluster(
+                    name=resp.name,
+                    description=resp.summary,
+                    slug=resp.slug,
+                    chat_ids=[
+                        chat_id for cluster in clusters for chat_id in cluster.chat_ids
+                    ],
+                    parent_id=None,
+                )
+
+                res.append(new_cluster)
+
+                for cluster in clusters:
+                    res.append(
+                        Cluster(
+                            id=cluster.id,
+                            name=cluster.name,
+                            description=cluster.description,
+                            slug=cluster.slug,
+                            chat_ids=cluster.chat_ids,
+                            parent_id=new_cluster.id,
+                        )
+                    )
+
+                return res
+            except Exception as e:
+                logger.error(
+                    f"Failed to rename cluster group with {len(clusters)} clusters: {e}"
+                )
+                self.errors.append(
+                    MetaClusteringError(
+                        cluster_ids=[c.id for c in clusters], error=str(e)
+                    )
+                )
+                # Return original clusters without modification
+                return clusters
 
     async def generate_meta_clusters(
         self, clusters: list[Cluster], show_preview: bool = True
@@ -609,6 +641,7 @@ Based on this information, determine the most appropriate higher-level cluster a
 
         In the event that we have a single cluster, we will just return a new higher level cluster which has the same name as the original cluster. ( This is an edge case which we should definitely handle better )
         """
+        self.errors = []
         if not clusters:
             return []
 

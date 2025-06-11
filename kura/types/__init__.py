@@ -1,5 +1,11 @@
 from .conversation import Conversation, Message
-from .cluster import Cluster, GeneratedCluster, ClusterTreeNode, ClusteringError
+from .cluster import (
+    Cluster,
+    GeneratedCluster,
+    ClusterTreeNode,
+    ClusteringError,
+    MetaClusteringError,
+)
 from .dimensionality import ProjectedCluster
 from .summarisation import ExtractedProperty, GeneratedSummary, ConversationSummary
 
@@ -14,4 +20,5 @@ __all__ = [
     "GeneratedSummary",
     "ConversationSummary",
     "ClusteringError",
+    "MetaClusteringError",
 ]

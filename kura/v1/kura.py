@@ -374,6 +374,7 @@ async def reduce_clusters_from_base_clusters(
     # Start with all clusters as potential roots
     all_clusters = clusters.copy()
     root_clusters = clusters.copy()
+    all_errors = []
 
     # Get max_clusters from model if available, otherwise use default
     max_clusters = getattr(model, "max_clusters", 10)
@@ -383,6 +384,9 @@ async def reduce_clusters_from_base_clusters(
     while len(root_clusters) > max_clusters:
         # Get updated clusters from meta-clustering
         new_current_level = await model.reduce_clusters(root_clusters)
+        if getattr(model, "errors", None):
+            all_errors.extend(model.errors)
+            model.errors = []
 
         # Find new root clusters (those without parents)
         root_clusters = [c for c in new_current_level if c.parent_id is None]
@@ -403,6 +407,10 @@ async def reduce_clusters_from_base_clusters(
     # Save to checkpoint
     if checkpoint_manager:
         checkpoint_manager.save_checkpoint(model.checkpoint_filename, all_clusters)
+        if all_errors:
+            checkpoint_manager.save_checkpoint(
+                model.error_checkpoint_filename, all_errors
+            )
 
     return all_clusters
 
