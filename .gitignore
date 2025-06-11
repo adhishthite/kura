@@ -52,6 +52,7 @@ site/
 
 checkpoints/
 checkpoint/
+checkpoint-*/
 
 scripts/eval.py
 scripts/es_to_kura.py
